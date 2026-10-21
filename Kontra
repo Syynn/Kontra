@@ -1,0 +1,1515 @@
+-- KONTRA CLIENT 1.7 / regular Matcha / complete standalone script
+-- RIGHT SHIFT opens the panel. All feature toggles/actions use panel buttons.
+-- Menu-selectable held or automatic mouse aim test. No visibility check or firing.
+local CONFIG={
+    Enabled=true, Boxes=true, Tracers=true, Labels=true, Distances=true, EnemiesOnly=true,
+    Skeleton=true, HeadDot=true, HeadDotRadius=2, SkeletonHz=30, SkeletonThickness=1,
+    UnavailableDistance=100000,
+    AimEnabled=false, AimPreview=false, AimHoldKey=0x02, AimAutomatic=false,
+    AimAcquireRadius=75, AimTrackRadius=120, AimSmoothTime=.22, AimGain=.65,
+    AimPoint="Torso", AimBodyAcquire=true, LocalStateInterval=.30,
+    Chams=false, ChamsOpacity=.30, ChamsHz=30, ChamsMaxTargets=16,
+    SoundESP=true, SoundSteps=true, SoundShots=true, SoundOther=false, SoundHideAllies=true,
+    SoundRange=400, SoundLifetime=1.8, SoundPollInterval=.03, SoundMaxMarkers=32, SoundScanCap=512,
+    AimCircleSegments=96, SoundDiagnostic=true, SoundProbeDuration=45,
+    SoundProbeInterval=.10, SoundProbeNodeCap=6000, SoundProbeTrackCap=64,
+    AimMaxStep=3, AimMaxPixelsPerSecond=120, AimDeadzone=2, AimMaxDistance=1000,
+    AimShowFOV=true, AimInvertX=false, AimInvertY=false,
+    UpdateHz=60, CacheInterval=.075, MaxTargets=128, MaxDistance=0,
+    TeamInterval=.30, PartsInterval=.75, PartialPartsInterval=.10, DetailedBounds=false,
+    BodyDepth=0, MaxNodesPerBody=180, MaxChildrenPerNode=96,
+    MaxBodySpan=12, MaxPartSize=8, Padding=2, MinimumBoxHeight=14, MinimumBoxWidth=8,
+    IgnoreModels={}, Duration=0, ReportInterval=0,
+    MenuKey=0xA1,
+    ReportPath="kontra/enemy_esp.txt",
+}
+local old=_G.KontraESP
+if type(old)=="table" and type(old.Stop)=="function" then pcall(old.Stop,"replaced") end
+local C={Running=false,Config=CONFIG,Enabled=CONFIG.Enabled,MenuOpen=false,State="starting",LastReport=""}
+_G.KontraESP=C
+local cfg=CONFIG
+local A={selected=nil,gate="disabled",waitRelease=true,wasHeld=false,rx=0,ry=0,lastTick=nil,
+    calls=0,failures=0,acquisitions=0,losses=0,heldFrames=0,deadzoneFrames=0,previewFrames=0,
+    totalX=0,totalY=0,maxStep=0,improved=0,worsened=0,eligible=0,objects={},page=1,
+    holdFrames=0,holdPresses=0,acquireScans=0,emptyScans=0,rejects={},gates={},lastRejects={},
+    acquireWaitTotal=0,acquireWaitMax=0,lastAcquireWait=nil,bodyAssisted=0}
+C.Aim=A
+local function resetAim(reason)
+    if A.selected then A.losses=A.losses+1 end
+    A.selected=nil; A.rx=0; A.ry=0; A.sample=nil; A.waitStarted=nil; A.waitRelease=true; A.gate=reason
+end
+local function recordAimGate()
+    A.gates[A.gate]=(A.gates[A.gate] or 0)+1
+end
+local clock=(type(tick)=="function" and tick) or (os and os.clock)
+local sleeper=type(wait)=="function" and wait or (task and task.wait)
+if type(clock)~="function" or type(sleeper)~="function" or type(WorldToScreen)~="function" or type(iskeypressed)~="function" then
+    print("KONTRA ENEMY ESP: requires tick/os.clock, wait/task.wait, WorldToScreen, and iskeypressed."); return
+end
+local function finite(x) return type(x)=="number" and x==x and math.abs(x)<math.huge end
+local function clamp(x,a,b) return math.max(a,math.min(b,x)) end
+local function str(x,n) local s=tostring(x):gsub("[%c]"," "); return s:sub(1,n or 180) end
+local function get(obj,key)
+    if not obj then return nil end
+    local ok,value=pcall(function() return obj[key] end)
+    if ok then return value end
+end
+local function xyz(value)
+    if not value then return nil end
+    local ok,x,y,z=pcall(function() return value.X,value.Y,value.Z end)
+    if ok and finite(x) and finite(y) and finite(z) then return {x,y,z} end
+end
+local function xy(value)
+    if not value then return nil end
+    local ok,x,y=pcall(function() return value.X,value.Y end)
+    if ok and finite(x) and finite(y) then return x,y end
+end
+local function id(obj)
+    if not obj then return nil end
+    local address=get(obj,"Address")
+    if finite(address) and address>0 then return string.format("%.0f",address) end
+    return obj
+end
+local function same(a,b) return a~=nil and b~=nil and (a==b or id(a)==id(b)) end
+local function children(obj)
+    local ok,result=pcall(function() return obj:GetChildren() end)
+    if ok and type(result)=="table" then return result end
+    return nil
+end
+local started=clock()
+local S={running=cfg.SoundDiagnostic,state=cfg.SoundDiagnostic and "sampling" or "disabled",started=started,
+    queue={},head=1,seen={},enqueued=0,nodes=0,sounds={},known={},cursor=0,seed=0,
+    events={},eventsDropped=0,trackDropped=0,samples=0,reads=0,readErrors=0,coverage={},classes={},
+    workTotal=0,workMax=0,workFrames=0,skippedFrames=0,nextSweep=0,turn=0,roots={},
+    pending=0}
+C.SoundProbe=S
+local FX={marks={},seen={},folder=nil,warm=false,nextScan=0,polls=0,candidates=0,emitted=0,
+    baseline=0,allyHidden=0,invalid=0,expired=0,dropped=0,scanLimited=0,errors=0,pool={},
+    chamTriangles=0,chamUpdates=0,chamSkipped=0,chamErrors=0,chamFault=nil,recent={}}
+C.Effects=FX
+local stats={frames=0,renders=0,refreshes=0,cacheFailures=0,frameErrors=0,drawErrors=0,
+    projections=0,projectionErrors=0,badPositions=0,stale=0,range=0,offscreen=0,
+    cached=0,maxCached=0,visible=0,maxVisible=0,capacityDropped=0,excluded=0,
+    updateTotal=0,updateMax=0,cacheTotal=0,cacheMax=0,removed=0,removeFailures=0,
+    teammateSkips=0,unknownSkips=0,localTeamSkips=0,partRefreshes=0,teamRefreshes=0,
+    bodyReads=0,minimumMarkers=0,partialMarkers=0,extremePositions=0,
+    skeletonReads=0,skeletonProjections=0,skeletonUpdates=0,skeletonSegments=0,headDots=0,maxObservedDistance=0,farthestRendered=0}
+C.Stats=stats
+local log,drawings,props,slots,entries={},{},{},{},{}
+local entryMap={}
+local nextLocalState=0
+local keys,world,root,camera,localCharacter={}
+local lastRefresh,lastReport=-math.huge,started
+local purple,gray,pale,background,ink
+local ui={x=28,y=28,w=420,h=456,row=1,objects={},mouse=nil,nextMouse=0,wasDown=false,dirty=true,layout={},sliderIDs={}}
+C.UI=ui
+local features={square=true,line=true,text=true,circle=true}
+local function event(s)
+    log[#log+1]=string.format("+%.2fs %s",clock()-started,str(s,240))
+    if #log>25 then table.remove(log,1) end
+end
+local function assign(obj,key,value)
+    if not obj then return end
+    local p=props[obj]
+    if not p then p={}; props[obj]=p end
+    if p[key]~=value then obj[key]=value; p[key]=value end
+end
+local function vector2(obj,key,x,y)
+    local p=props[obj]
+    if not p then p={}; props[obj]=p end
+    local oldValue=p[key]
+    if not oldValue or oldValue[1]~=x or oldValue[2]~=y then
+        obj[key]=Vector2.new(x,y); p[key]={x,y}
+    end
+end
+local function newDrawing(kind,color)
+    local obj=Drawing.new(kind); drawings[#drawings+1]=obj
+    assign(obj,"Visible",false)
+    assign(obj,"Color",color)
+    if kind=="Square" then assign(obj,"Filled",false)
+    elseif kind=="Line" then assign(obj,"Thickness",1)
+    elseif kind=="Circle" then
+        assign(obj,"Radius",cfg.HeadDotRadius)
+        pcall(function() obj.Filled=true end)
+        pcall(function() obj.NumSides=12 end)
+    elseif kind=="Text" then
+        local ok=pcall(function() obj.Size=14 end)
+        C.TextSizeAccepted=ok
+        pcall(function() obj.Outline=true end)
+    end
+    return obj
+end
+local function tryDrawing(kind,color)
+    local ok,result=pcall(newDrawing,kind,color)
+    if ok then return result end
+    event(kind.." unavailable: "..tostring(result)); return nil
+end
+local function hideSlot(slot)
+    if not slot then return end
+    for _,obj in ipairs(slot.objects) do pcall(assign,obj,"Visible",false) end
+end
+local function hideAll()
+    for _,slot in pairs(slots) do hideSlot(slot); slot.nextChams=0 end
+    for _,slot in pairs(FX.pool) do for _,key in ipairs({"ring","label"}) do if slot[key] then pcall(assign,slot[key],"Visible",false) end end end
+    stats.visible=0
+end
+local function removeAll()
+    local failed={}
+    for _,obj in ipairs(drawings) do
+        pcall(function() obj.Visible=false end)
+        local ok=pcall(function() obj:Remove() end)
+        if ok then props[obj]=nil; stats.removed=stats.removed+1
+        else failed[#failed+1]=obj; stats.removeFailures=stats.removeFailures+1 end
+    end
+    drawings=failed
+end
+local function metadata()
+    local rows={"-- FOCUSED OWNERSHIP METADATA (read only; no inferred ownership) --"}
+    local bytes,omitted=0,0
+    local function add(line)
+        if bytes+#line>60000 then omitted=omitted+1; return false end
+        rows[#rows+1]=line; bytes=bytes+#line+1; return true
+    end
+    local function valueText(value)
+        local v=xyz(value)
+        if v then return string.format("Vector3(%.3f,%.3f,%.3f)",v[1],v[2],v[3]) end
+        if type(value)=="table" or type(value)=="userdata" then
+            local ok,name=pcall(function() return value:GetFullName() end)
+            if ok and type(name)=="string" then return str(name,220) end
+        end
+        return type(value)..":"..str(value,220)
+    end
+    local function attrs(obj)
+        local ok,raw=pcall(function() return obj:GetAttributes() end)
+        if not ok or type(raw)~="table" then return "unavailable" end
+        local fields={}
+        for key,value in pairs(raw) do
+            local name
+            if type(key)=="string" then name=key
+            elseif type(value)=="string" then name=value; local good,result=pcall(function() return obj:GetAttribute(name) end); value=good and result or nil end
+            if name and #fields<16 then fields[#fields+1]=str(name,60).."="..valueText(value) end
+        end
+        table.sort(fields)
+        return #fields>0 and table.concat(fields,"; ") or "none"
+    end
+    local good,players=pcall(function() return game:GetService("Players"):GetPlayers() end)
+    if good and type(players)=="table" then
+        for i,player in ipairs(players) do
+            if i>32 then break end
+            local fields={}
+            for _,key in ipairs({"Team","RelayTag","RoundSpawn","SpawnProtected","Spectating","IsSpectating","Alive","Dead"}) do
+                local ok,value=pcall(function() return player:GetAttribute(key) end)
+                fields[#fields+1]=key.."="..(ok and valueText(value) or "read error")
+            end
+            add("PLAYER "..str(get(player,"Name")).." "..table.concat(fields,"; "))
+        end
+    end
+    for _,e in ipairs(entries) do
+        add("MODEL ID "..e.name.." Attributes="..attrs(e.model))
+        local queue,head={{obj=e.model,path=e.name,depth=0}},1
+        while head<=#queue and head<=96 do
+            local item=queue[head]; head=head+1
+            local class=get(item.obj,"ClassName")
+            local attributes=attrs(item.obj)
+            add("NODE "..item.path.." ["..str(class).."] attributes="..attributes)
+            if class=="StringValue" or class=="ObjectValue" or class=="IntValue" or class=="NumberValue" or class=="BoolValue" then
+                add("  VALUE="..valueText(get(item.obj,"Value")))
+            elseif class=="TextLabel" then add("  TEXT="..str(get(item.obj,"Text"),240)) end
+            if item.depth<4 then
+                for i,obj in ipairs(children(item.obj) or {}) do
+                    if i>64 or #queue>=160 then break end
+                    queue[#queue+1]={obj=obj,path=item.path.."/"..str(get(obj,"Name"),90),depth=item.depth+1}
+                end
+            end
+        end
+        if head<=#queue then add("  Metadata node cap reached") end
+    end
+    if omitted>0 then rows[#rows+1]="Metadata byte budget reached; omitted lines="..omitted end
+    return rows
+end
+function S.report()
+    local rows={"-- BACKGROUND SOUND DIAGNOSTIC --",
+        "State="..S.state.." elapsed="..string.format("%.2f",math.min(clock()-S.started,cfg.SoundProbeDuration)).."s budgetSeconds="..cfg.SoundProbeDuration,
+        string.format("Visited=%d trackedSounds=%d droppedSounds=%d samples=%d propertyReads/errors=%d/%d events=%d droppedEvents=%d skippedBusyFrames=%d",S.nodes,#S.sounds,S.trackDropped,S.samples,S.reads,S.readErrors,#S.events,S.eventsDropped,S.skippedFrames),
+        string.format("Sound work ms avg/max=%.3f/%.3f",S.workTotal/math.max(1,S.workFrames)*1000,S.workMax*1000),
+        "Compatibility probes only: Roblox Sound properties are not assumed supported by Matcha. Nil/failed reads are unavailable, not false.",
+        "Name hints do NOT confirm footsteps/gunshots or identify an enemy. Polling can miss short sounds. No sound is played or modified; this classic Sound probe is separate from named cue Part markers on EFFECTS."}
+    for reason in pairs(S.coverage) do rows[#rows+1]="COVERAGE "..reason end
+    for class,count in pairs(S.classes) do
+        if class=="Sound" or class=="AudioPlayer" or class=="AudioEmitter" or class=="AudioListener" or class=="Wire" then rows[#rows+1]="AUDIO CLASS "..class.."="..count end
+    end
+    for _,e in ipairs(S.sounds) do
+        rows[#rows+1]="SOUND "..e.path.." hint="..e.hint.." playKey="..str(e.playKey).." positionSource="..str(e.positionKind).." observedStarts="..e.starts
+        for _,field in ipairs({"IsPlaying","Playing","SoundId","TimePosition","PlaybackLoudness","Volume","Looped","RollOffMaxDistance"}) do
+            local item=e.fields[field]
+            rows[#rows+1]="  "..field.."="..(item and (item.status..":"..str(item.value,130)) or "not sampled")
+        end
+    end
+    for _,item in ipairs(S.events) do rows[#rows+1]="SOUND EVENT "..item end
+    if S.fault then rows[#rows+1]="Sound probe fault="..str(S.fault) end
+    return rows
+end
+local function report(copy)
+    local elapsed=math.max(.001,(C.StoppedAt or clock())-started)
+    local rows={"========== KONTRA CLIENT 1.7 ==========",
+        "State="..C.State.." running="..tostring(C.Running).." enabled="..tostring(C.Enabled).." panel="..tostring(C.MenuOpen),
+        string.format("Elapsed=%.2fs loops=%d draws=%d loops/sec=%.2f",elapsed,stats.frames,stats.renders,stats.frames/elapsed),
+        string.format("Update ms avg/max=%.3f/%.3f cache ms avg/max=%.3f/%.3f",stats.updateTotal/math.max(1,stats.frames)*1000,stats.updateMax*1000,stats.cacheTotal/math.max(1,stats.refreshes)*1000,stats.cacheMax*1000),
+        string.format("Cached/currentMax=%d/%d visible/currentMax=%d/%d capacityDropped=%d excluded=%d",stats.cached,stats.maxCached,stats.visible,stats.maxVisible,stats.capacityDropped,stats.excluded),
+        string.format("Refreshes=%d cacheFailures=%d frameErrors=%d drawingErrors=%d stale=%d invalidPositions=%d offscreen=%d range=%d",stats.refreshes,stats.cacheFailures,stats.frameErrors,stats.drawErrors,stats.stale,stats.badPositions,stats.offscreen,stats.range),
+        string.format("Projection calls/errors=%d/%d removed=%d removalFailures=%d",stats.projections,stats.projectionErrors,stats.removed,stats.removeFailures),
+        "Sources: Workspace.Characters immediate Model/Folder children; direct R15 body parts only.",
+        "Excluded names: "..table.concat(cfg.IgnoreModels,", "),
+        "Team inferred from exact uniform accessory names; player-name mapping and health are NOT established.",
+        "LocalTeam="..tostring(C.LocalTeam).." enemiesOnly="..tostring(cfg.EnemiesOnly).." requires 2 distinct uniform names and no conflicting uniform.",
+        string.format("Filtered frame skips teammates=%d unknownUniform=%d localTeamUnavailable=%d",stats.teammateSkips,stats.unknownSkips,stats.localTeamSkips),
+        string.format("Incremental part/team refreshes=%d/%d body position reads=%d min-size markers=%d partial markers=%d",stats.partRefreshes,stats.teamRefreshes,stats.bodyReads,stats.minimumMarkers,stats.partialMarkers),
+        "Geometry="..(cfg.DetailedBounds and "full parts / projected corners" or "up to 5 body anchors / vertical box").." minimum pixels="..cfg.MinimumBoxWidth.."x"..cfg.MinimumBoxHeight,
+        "Distance limit="..cfg.MaxDistance.." (0=unlimited); extreme/unavailable threshold="..cfg.UnavailableDistance.."; no positions are extrapolated or retained as live markers.",
+        string.format("Extreme position frames=%d maxObservedDistance=%.1f skeletonUpdates=%d skeletonReads=%d skeletonProjections=%d segment draws=%d head-dot draws=%d",stats.extremePositions,stats.maxObservedDistance,stats.skeletonUpdates,stats.skeletonReads,stats.skeletonProjections,stats.skeletonSegments,stats.headDots),
+        string.format("Farthest rendered body=%.1f studs; maximum includes only successful current-position overlays",stats.farthestRendered),
+        "Skeleton="..tostring(cfg.Skeleton).." targetHz="..cfg.SkeletonHz.." headDot="..tostring(cfg.HeadDot).." radiusPixels="..cfg.HeadDotRadius.."; filled projected body chams are optional on EFFECTS.",
+        "Through-wall positions can render; no occlusion/visibility claim is made.",
+        "PrimaryPart, HumanoidRootPart, collision helpers, weapons, and Transparency are not used as body geometry.",
+        "Body IDs are NOT mapped to players. TEAM ~CT/~T are uniform inferences, not authoritative ownership. Aim always rejects teammates/unknowns even if ESP team filtering is off.",
+        "-- AIM INPUT / TARGET TEST --",
+        "Aim enabled="..tostring(cfg.AimEnabled).." automatic="..tostring(cfg.AimAutomatic).." preview="..tostring(cfg.AimPreview).." gate="..str(A.gate).." beforeStopGate="..str(A.beforeStopGate).." target="..str(A.selected).." holdKey="..cfg.AimHoldKey,
+        "Last acquired body="..str(A.lastTarget).." last observed screen error="..str(A.lastError).." pixels (retained diagnostics only, not a live target)",
+        "Aim point="..cfg.AimPoint.." body-aware acquisition="..tostring(cfg.AimBodyAcquire).." last source="..str(A.lastPointSource),
+        string.format("Acquisition wait seconds last/avg/max=%s/%.3f/%.3f body-assisted locks=%d",str(A.lastAcquireWait),A.acquireWaitTotal/math.max(1,A.acquisitions),A.acquireWaitMax,A.bodyAssisted),
+        string.format("Activation frames/edges=%d/%d (automatic uses enabled state); acquisition scans/empty=%d/%d closest candidate pixels=%s id=%s viewport=%s",A.holdFrames,A.holdPresses,A.acquireScans,A.emptyScans,str(A.closestDistance),str(A.closestName),C.Viewport and (C.Viewport[1].."x"..C.Viewport[2]) or "unknown"),
+        "Visibility=NOT CHECKED. On-screen projection is NOT line of sight. Select a visibly exposed body manually before holding the key. No automatic fire or camera writes.",
+        "Input API mousemoverel="..type(mousemoverel).." iskeypressed="..type(iskeypressed).." ismouse2pressed="..type(ismouse2pressed).." isrbxactive="..type(isrbxactive).." setrobloxinput="..type(setrobloxinput).." (routing not changed)",
+        string.format("Aim acquisitions/losses=%d/%d heldFrames=%d eligible=%d calls/failures=%d/%d totalDelta=(%d,%d) largestStep=%.2f deadzoneFrames=%d previewFrames=%d",A.acquisitions,A.losses,A.heldFrames,A.eligible,A.calls,A.failures,A.totalX,A.totalY,A.maxStep,A.deadzoneFrames,A.previewFrames),
+        string.format("Aim acquire/track pixels=%g/%g smoothSeconds=%.3f gain=%.3f maxStep=%g speedLimit=%g deadzone=%g maxDistance=%g invertX/Y=%s/%s",cfg.AimAcquireRadius,cfg.AimTrackRadius,cfg.AimSmoothTime,cfg.AimGain,cfg.AimMaxStep,cfg.AimMaxPixelsPerSecond,cfg.AimDeadzone,cfg.AimMaxDistance,tostring(cfg.AimInvertX),tostring(cfg.AimInvertY)),
+        "Observed next-frame error improved="..A.improved.." worsened="..A.worsened.."; target/user motion confounds this. A successful input call does NOT prove the camera responded.",
+        "Drawing Square="..tostring(features.square).." Line="..tostring(features.line).." Text="..tostring(features.text).." Text.Size="..tostring(C.TextSizeAccepted),
+        "MaxDistance="..cfg.MaxDistance.." (0=unlimited) updateHz="..cfg.UpdateHz.." cacheSeconds="..cfg.CacheInterval,
+        "-- CURRENT MODELS --"}
+    for i,e in ipairs(entries) do
+        if i>cfg.MaxTargets then break end
+        rows[#rows+1]=e.name.." parts="..#e.parts.." team="..(e.team or "UNKNOWN").." uniformEvidence="..str(e.teamEvidence,240).." status="..str(e.state or "not rendered")..
+            " anchor="..str(e.anchorName).." distance="..str(e.distance).." discoveryToFirstVisible="..str(e.discoveryToVisible)..
+            (e.lastBox and string.format(" box=(%.1f,%.1f)-(%.1f,%.1f)",e.lastBox[1],e.lastBox[2],e.lastBox[3],e.lastBox[4]) or "")
+    end
+    for _,line in ipairs(S.report()) do rows[#rows+1]=line end
+    if FX.report then for _,line in ipairs(FX.report()) do rows[#rows+1]=line end end
+    rows[#rows+1]="-- AIM GATES / ACQUISITION REJECTIONS --"
+    for reason,count in pairs(A.gates) do rows[#rows+1]="GATE "..reason.." frames="..count end
+    for reason,count in pairs(A.rejects) do rows[#rows+1]="REJECT "..reason.." tests="..count end
+    for name,reason in pairs(A.lastRejects) do rows[#rows+1]="LAST CANDIDATE "..name..": "..reason end
+    rows[#rows+1]="-- RECENT EVENTS --"
+    for _,s in ipairs(log) do rows[#rows+1]=s end
+    if copy then
+        local ok,extra=pcall(metadata)
+        if ok then for _,line in ipairs(extra) do rows[#rows+1]=line end
+        else rows[#rows+1]="Metadata error: "..str(extra) end
+    end
+    rows[#rows+1]="========== END KONTRA CLIENT =========="
+    C.LastReport=table.concat(rows,"\n")
+    print(C.LastReport)
+    if copy then
+        if type(setclipboard)=="function" then
+            local ok,result=pcall(setclipboard,C.LastReport); C.ReportCopied=ok and result~=false
+        end
+        if type(writefile)=="function" then
+            local ok=pcall(function()
+                assert(writefile(cfg.ReportPath,C.LastReport)~=false,"write rejected")
+                if type(readfile)=="function" then assert(readfile(cfg.ReportPath)==C.LastReport,"readback failed") end
+            end)
+            C.ReportSaved=ok
+        end
+        print("KONTRA ENEMY ESP report: copied="..tostring(C.ReportCopied).." saved="..tostring(C.ReportSaved).." path="..cfg.ReportPath)
+    end
+    return C.LastReport
+end
+C.Report=report
+function C.Stop(reason)
+    if C.StoppedAt then removeAll(); return end
+    C.Running=false; C.StoppedAt=clock(); C.State="stopped: "..str(reason)
+    A.beforeStopGate=A.gate; resetAim("stopped")
+    FX.marks={}; FX.seen={}; FX.visible=0; FX.status="stopped"
+    if S.running then S.running=false; S.state="partial: client stopped"; S.queue={} end
+    event(C.State); hideAll(); removeAll(); report(true)
+end
+local function edge(key)
+    local ok,down=pcall(iskeypressed,key)
+    down=ok and down==true
+    local was=keys[key]; keys[key]=down
+    return down and not was
+end
+local function ignored(name)
+    for _,value in ipairs(cfg.IgnoreModels) do if string.lower(name)==string.lower(value) then return true end end
+    return false
+end
+local uniforms={
+    vestt="T",maskt="T",hostlert="T",beltt="T",
+    vestct="CT",maskct="CT",hostlerct="CT",beltct="CT",capct="CT",
+    leftkneepadct="CT",rightkneepadct="CT",
+}
+local function inferTeam(model,modelChildren)
+    -- Read only the actual Accessories folder. Weapon names and arbitrary suffixes are not evidence.
+    local folder
+    for _,obj in ipairs(modelChildren or children(model) or {}) do
+        if get(obj,"Name")=="Accessories" and get(obj,"ClassName")=="Folder" then folder=obj; break end
+    end
+    if not folder then return nil,"Accessories missing" end
+    local counts,seen,evidence={T=0,CT=0},{},{}
+    for _,obj in ipairs(children(folder) or {}) do
+        local name=get(obj,"Name")
+        if type(name)=="string" and get(obj,"ClassName")=="Accessory" then
+            local key=string.lower(name); local team=uniforms[key]
+            if team and not seen[key] then
+                seen[key]=true; counts[team]=counts[team]+1; evidence[#evidence+1]=name
+            end
+        end
+    end
+    table.sort(evidence)
+    local detail=table.concat(evidence,",")
+    if counts.T>0 and counts.CT>0 then return nil,"CONFLICT: "..detail end
+    if counts.T>=2 then return "T",detail end
+    if counts.CT>=2 then return "CT",detail end
+    return nil,"insufficient: "..detail
+end
+local function readLocalTeam(player)
+    local ok,value=pcall(function() return player:GetAttribute("Team") end)
+    if ok and type(value)=="string" then
+        value=string.upper(value:match("^%s*(.-)%s*$"))
+        if value=="CT" or value=="T" then return value end
+    end
+    return nil
+end
+local bodyNames={head=true,uppertorso=true,lowertorso=true,leftupperarm=true,rightupperarm=true,
+    leftlowerarm=true,rightlowerarm=true,lefthand=true,righthand=true,leftupperleg=true,
+    rightupperleg=true,leftlowerleg=true,rightlowerleg=true,leftfoot=true,rightfoot=true}
+local function collect(model,modelChildren)
+    local parts,seen={},{}
+    local queue,head={{obj=model,depth=0}},1
+    local examined=0
+    while head<=#queue and examined<cfg.MaxNodesPerBody do
+        local item=queue[head]; head=head+1; examined=examined+1
+        local list=(item.obj==model and modelChildren) or children(item.obj)
+        if list then
+            for i=1,math.min(#list,cfg.MaxChildrenPerNode) do
+                local obj=list[i]
+                local name=get(obj,"Name"); name=type(name)=="string" and string.lower(name) or ""
+                if bodyNames[name] and not seen[name] then
+                    local class=get(obj,"ClassName")
+                    if class=="Part" or class=="MeshPart" or class=="UnionOperation" then
+                        local size=xyz(get(obj,"Size"))
+                        if size and math.min(size[1],size[2],size[3])>.01 and math.max(size[1],size[2],size[3])<=cfg.MaxPartSize then
+                            parts[#parts+1]={obj=obj,name=name,size=size}; seen[name]=true
+                        end
+                    end
+                elseif item.depth<cfg.BodyDepth and #queue<cfg.MaxNodesPerBody then
+                    -- Descend only through folders/models; equipment parts are never anchors.
+                    local class=get(obj,"ClassName")
+                    if class=="Model" or class=="Folder" then queue[#queue+1]={obj=obj,depth=item.depth+1} end
+                end
+            end
+        end
+        if #parts==15 then break end
+    end
+    table.sort(parts,function(a,b)
+        local rank={uppertorso=1,head=2,lowertorso=3}
+        local ar,br=rank[a.name] or 10,rank[b.name] or 10
+        if ar==br then return a.name<b.name end
+        return ar<br
+    end)
+    return parts
+end
+local fastNames={head=true,uppertorso=true,lowertorso=true,leftfoot=true,rightfoot=true}
+local function selectRenderParts(parts)
+    local result={}
+    for _,part in ipairs(parts) do if fastNames[part.name] then result[#result+1]=part end end
+    if #result==0 and parts[1] then result[1]=parts[1] end
+    return result
+end
+local function refresh()
+    local now=clock()
+    local currentWorld=game:GetService("Workspace")
+    assert(currentWorld,"Workspace unavailable")
+    local nextRoot
+    if root and same(get(root,"Parent"),currentWorld) and get(root,"Name")=="Characters" then nextRoot=root
+    else
+        local list=children(currentWorld); assert(list,"Workspace children unreadable")
+        for _,obj in ipairs(list) do if get(obj,"Name")=="Characters" then nextRoot=obj; break end end
+    end
+    world=currentWorld
+    if not same(root,nextRoot) then
+        hideAll(); entryMap={}; event(nextRoot and "Bound Workspace.Characters" or "Waiting for Workspace.Characters")
+    end
+    root=nextRoot
+    local ok,player=pcall(function() return game:GetService("Players").LocalPlayer end)
+    localCharacter=ok and get(player,"Character") or nil
+    if now>=nextLocalState then
+        nextLocalState=now+cfg.LocalStateInterval; C.LocalAimBlock=nil
+        if ok and player then
+            for _,name in ipairs({"Spectating","IsSpectating","Dead","Alive"}) do
+                local good,value=pcall(function() return player:GetAttribute(name) end)
+                if good and ((name=="Alive" and value==false) or (name~="Alive" and value==true)) then
+                    C.LocalAimBlock="local "..name.."="..tostring(value); break
+                end
+            end
+        end
+    end
+    local nextTeam=ok and readLocalTeam(player) or nil
+    if nextTeam~=C.LocalTeam then
+        C.LocalTeam=nextTeam; ui.dirty=true; hideAll()
+        event("Local team now "..tostring(nextTeam).." (Player Team attribute)")
+    end
+    local nextEntries,nextMap={},{}; stats.excluded=0
+    if root then
+        local models=children(root); assert(models,"Characters children unreadable")
+        for _,model in ipairs(models) do
+            local name=get(model,"Name")
+            if type(name)=="string" then
+                if not same(get(model,"Parent"),root) or ignored(name) or same(model,localCharacter) then stats.excluded=stats.excluded+1
+                else
+                    local class=get(model,"ClassName")
+                    if class=="Model" or class=="Folder" then
+                        local key=id(model)
+                        local e=entryMap[key]
+                        if not e then e={model=model,name=str(name,80),key=key,parts={},nextParts=0,nextTeam=0,firstSeen=now} end
+                        e.model=model; e.name=str(name,80)
+                        local needParts=now>=e.nextParts
+                        local needTeam=now>=e.nextTeam
+                        if needParts or needTeam then
+                            local list=children(model)
+                            if list then
+                                if needParts then
+                                    e.parts=collect(model,list); e.renderParts=selectRenderParts(e.parts)
+                                    e.nextParts=now+(#e.parts==15 and cfg.PartsInterval or cfg.PartialPartsInterval)
+                                    stats.partRefreshes=stats.partRefreshes+1
+                                end
+                                if needTeam then
+                                    e.team,e.teamEvidence=inferTeam(model,list)
+                                    e.nextTeam=now+(e.team and cfg.TeamInterval or cfg.CacheInterval)
+                                    stats.teamRefreshes=stats.teamRefreshes+1
+                                end
+                            else
+                                e.team=nil; e.teamEvidence="body children unreadable"; e.nextTeam=0
+                            end
+                        end
+                        nextEntries[#nextEntries+1]=e; nextMap[key]=e
+                    end
+                end
+            end
+        end
+    end
+    table.sort(nextEntries,function(a,b) return a.name<b.name end)
+    stats.capacityDropped=math.max(0,#nextEntries-cfg.MaxTargets)
+    while #nextEntries>cfg.MaxTargets do table.remove(nextEntries) end
+    entries=nextEntries; entryMap=nextMap; C.Entries=entries
+    stats.cached=#entries; stats.maxCached=math.max(stats.maxCached,#entries)
+    C.State=root and "tracking" or "waiting for Workspace.Characters"
+end
+local function project(x,y,z)
+    stats.projections=stats.projections+1
+    local ok,screen,onScreen=pcall(function() return WorldToScreen(Vector3.new(x,y,z)) end)
+    if not ok then stats.projectionErrors=stats.projectionErrors+1; return nil end
+    if onScreen~=true then return nil end
+    local sx,sy=xy(screen)
+    if sx then return sx,sy end
+    stats.projectionErrors=stats.projectionErrors+1
+end
+local function readBodyPosition(e,part)
+    stats.bodyReads=stats.bodyReads+1
+    local read,parent,value=pcall(function() return part.obj.Parent,part.obj.Position end)
+    if read and same(parent,e.model) then
+        local pos=xyz(value)
+        if pos then return pos end
+        stats.badPositions=stats.badPositions+1
+    else stats.stale=stats.stale+1; e.nextParts=0 end
+end
+local function geometry(e,camPos,vw,vh)
+    e.lastBox=nil; e.distance=nil; e.anchorName=nil; e.framePositions={}; e.headScreen=nil
+    if not same(get(e.model,"Parent"),root) then e.state="model left Characters"; stats.stale=stats.stale+1; return nil end
+    if cfg.EnemiesOnly then
+        if not C.LocalTeam then e.state="hidden: local team unavailable or spectator"; stats.localTeamSkips=stats.localTeamSkips+1; return nil end
+        if not e.team then e.state="hidden: unknown/conflicting uniform"; stats.unknownSkips=stats.unknownSkips+1; return nil end
+        if e.team==C.LocalTeam then e.state="hidden: teammate uniform"; stats.teammateSkips=stats.teammateSkips+1; return nil end
+    end
+    local positions={}; local anchor
+    for _,part in ipairs(cfg.DetailedBounds and e.parts or e.renderParts or e.parts) do
+        local pos=readBodyPosition(e,part)
+        if pos then
+            positions[#positions+1]={pos=pos,part=part}; e.framePositions[part.name]=pos
+            if not anchor then
+                anchor=positions[#positions]; e.anchorName=part.name; e.lastAnchor=pos
+                e.distance=math.sqrt((pos[1]-camPos[1])^2+(pos[2]-camPos[2])^2+(pos[3]-camPos[3])^2)
+                stats.maxObservedDistance=math.max(stats.maxObservedDistance,e.distance)
+                if cfg.UnavailableDistance>0 and e.distance>cfg.UnavailableDistance then
+                    e.state="position unavailable: extreme-distance candidate"; stats.extremePositions=stats.extremePositions+1; return nil
+                end
+                if cfg.MaxDistance>0 and e.distance>cfg.MaxDistance then e.state="range"; stats.range=stats.range+1; return nil end
+            end
+        end
+    end
+    if not anchor then e.state="no valid body parts"; return nil end
+    local p=anchor.pos
+    local b={math.huge,math.huge,math.huge,-math.huge,-math.huge,-math.huge}
+    local accepted=0
+    for _,g in ipairs(positions) do
+        local pos,size=g.pos,g.part.size
+        if math.max(math.abs(pos[1]-p[1]),math.abs(pos[2]-p[2]),math.abs(pos[3]-p[3]))<=cfg.MaxBodySpan then
+            for axis=1,3 do b[axis]=math.min(b[axis],pos[axis]-size[axis]/2); b[axis+3]=math.max(b[axis+3],pos[axis]+size[axis]/2) end
+            accepted=accepted+1
+        end
+    end
+    if accepted==0 then e.state="no compact geometry"; return nil end
+    local left,top,right,bottom=math.huge,math.huge,-math.huge,-math.huge
+    local count=0
+    if cfg.DetailedBounds then
+        for _,x in ipairs({b[1],b[4]}) do for _,y in ipairs({b[2],b[5]}) do for _,z in ipairs({b[3],b[6]}) do
+            local sx,sy=project(x,y,z)
+            if sx and sx>=0 and sy>=0 and sx<=vw and sy<=vh then
+                count=count+1; left=math.min(left,sx); right=math.max(right,sx); top=math.min(top,sy); bottom=math.max(bottom,sy)
+            end
+        end end end
+    else
+        local cx,cz=(b[1]+b[4])/2,(b[3]+b[6])/2
+        local tx,ty=project(cx,b[5],cz)
+        local bx,by=project(cx,b[2],cz)
+        if tx and bx then
+            local height=math.abs(by-ty)
+            local center=(tx+bx)/2
+            local width=height*.48+math.abs(tx-bx)
+            left,right=center-width/2,center+width/2
+            top,bottom=math.min(ty,by),math.max(ty,by); count=2
+        else
+            -- A real on-screen anchor can still mark a partially clipped body.
+            local ax,ay=project(p[1],p[2],p[3])
+            if ax then
+                left,right=ax,ax; top,bottom=ay,ay; count=1
+                if tx then left=math.min(left,tx); right=math.max(right,tx); top=math.min(top,ty); bottom=math.max(bottom,ty) end
+                if bx then left=math.min(left,bx); right=math.max(right,bx); top=math.min(top,by); bottom=math.max(bottom,by) end
+                stats.partialMarkers=stats.partialMarkers+1
+            end
+        end
+    end
+    if count==0 then e.state="off-screen / no valid body projection"; stats.offscreen=stats.offscreen+1; return nil end
+    local width,height=right-left,bottom-top
+    if width<cfg.MinimumBoxWidth or height<cfg.MinimumBoxHeight then stats.minimumMarkers=stats.minimumMarkers+1 end
+    local cx,cy=(left+right)/2,(top+bottom)/2
+    width,height=math.max(width,cfg.MinimumBoxWidth),math.max(height,cfg.MinimumBoxHeight)
+    left,right=cx-width/2,cx+width/2; top,bottom=cy-height/2,cy+height/2
+    left,top=clamp(left-cfg.Padding,0,vw),clamp(top-cfg.Padding,0,vh)
+    right,bottom=clamp(right+cfg.Padding,0,vw),clamp(bottom+cfg.Padding,0,vh)
+    if right-left<1 or bottom-top<1 then e.state="tiny projection"; return nil end
+    e.state="rendered"; e.lastBox={left,top,right,bottom}; e.bodyBounds=b
+    stats.farthestRendered=math.max(stats.farthestRendered,e.distance)
+    if not e.firstVisible then e.firstVisible=clock(); e.discoveryToVisible=e.firstVisible-e.firstSeen end
+    return e.lastBox
+end
+local bones={
+    {"head","uppertorso"},{"uppertorso","lowertorso"},
+    {"uppertorso","leftupperarm"},{"leftupperarm","leftlowerarm"},{"leftlowerarm","lefthand"},
+    {"uppertorso","rightupperarm"},{"rightupperarm","rightlowerarm"},{"rightlowerarm","righthand"},
+    {"lowertorso","leftupperleg"},{"leftupperleg","leftlowerleg"},{"leftlowerleg","leftfoot"},
+    {"lowertorso","rightupperleg"},{"rightupperleg","rightlowerleg"},{"rightlowerleg","rightfoot"},
+}
+local function updateBones(e,now)
+    if not cfg.Skeleton then e.boneScreen=nil; e.nextBones=0; return end
+    if e.nextBones and now<e.nextBones and e.boneScreen then return end
+    e.nextBones=now+1/cfg.SkeletonHz; e.boneScreen={}; stats.skeletonUpdates=stats.skeletonUpdates+1
+    local anchor=e.framePositions[e.anchorName]
+    if not anchor then return end
+    for _,part in ipairs(e.parts) do
+        local pos=e.framePositions[part.name]
+        if not pos then stats.skeletonReads=stats.skeletonReads+1; pos=readBodyPosition(e,part) end
+        if pos and math.max(math.abs(pos[1]-anchor[1]),math.abs(pos[2]-anchor[2]),math.abs(pos[3]-anchor[3]))<=cfg.MaxBodySpan then
+            stats.skeletonProjections=stats.skeletonProjections+1
+            local x,y=project(pos[1],pos[2],pos[3])
+            if x then e.boneScreen[part.name]={x,y} end
+        end
+    end
+end
+local function newSlot()
+    local s={objects={}}
+    local function own(obj) if obj then s.objects[#s.objects+1]=obj end; return obj end
+    if features.square then s.box=own(tryDrawing("Square",purple)); if not s.box then features.square=false end end
+    if not s.box and features.line then
+        s.edges={}
+        for i=1,4 do
+            local obj=own(tryDrawing("Line",purple))
+            if not obj then features.line=false; break end
+            s.edges[i]=obj
+        end
+    end
+    if features.line then s.tracer=own(tryDrawing("Line",gray)); if not s.tracer then features.line=false end end
+    if features.text then s.label=own(tryDrawing("Text",pale)); if not s.label then features.text=false end end
+    if #s.objects==0 then s.failed=true; stats.drawErrors=stats.drawErrors+1; event("No supported Drawing objects; see API report") end
+    return s
+end
+local function renderExtras(slot,e,now)
+    updateBones(e,now)
+    slot.bones=slot.bones or {}
+    for i,pair in ipairs(bones) do
+        local a=cfg.Skeleton and e.boneScreen and e.boneScreen[pair[1]]
+        local b=cfg.Skeleton and e.boneScreen and e.boneScreen[pair[2]]
+        local line=slot.bones[i]
+        if a and b and features.line then
+            if not line then
+                line=tryDrawing("Line",purple)
+                if line then slot.bones[i]=line; slot.objects[#slot.objects+1]=line end
+            end
+            if line then
+                vector2(line,"From",a[1],a[2]); vector2(line,"To",b[1],b[2])
+                assign(line,"Thickness",cfg.SkeletonThickness); assign(line,"Visible",true)
+                stats.skeletonSegments=stats.skeletonSegments+1
+            end
+        elseif line then assign(line,"Visible",false) end
+    end
+    local head=e.framePositions.head
+    local x,y
+    if cfg.HeadDot and head then x,y=project(head[1],head[2],head[3]) end
+    if x then
+        if not slot.dot and not slot.dotUnavailable then
+            if features.circle then slot.dot=tryDrawing("Circle",pale); if not slot.dot then features.circle=false end end
+            if not slot.dot and features.square then
+                slot.dot=tryDrawing("Square",pale); slot.dotSquare=slot.dot~=nil
+                if slot.dot then assign(slot.dot,"Filled",true) end
+            end
+            if slot.dot then slot.objects[#slot.objects+1]=slot.dot else slot.dotUnavailable=true end
+        end
+        if slot.dot then
+            if slot.dotSquare then
+                vector2(slot.dot,"Position",x-cfg.HeadDotRadius,y-cfg.HeadDotRadius)
+                vector2(slot.dot,"Size",cfg.HeadDotRadius*2,cfg.HeadDotRadius*2)
+            else vector2(slot.dot,"Position",x,y); assign(slot.dot,"Radius",cfg.HeadDotRadius) end
+            assign(slot.dot,"Visible",true); stats.headDots=stats.headDots+1
+        end
+    elseif slot.dot then assign(slot.dot,"Visible",false) end
+end
+local function renderSlot(slot,e,b,vw,vh)
+    local l,t,r,bottom=b[1],b[2],b[3],b[4]
+    if slot.box then
+        assign(slot.box,"Visible",cfg.Boxes)
+        if cfg.Boxes then vector2(slot.box,"Position",l,t); vector2(slot.box,"Size",r-l,bottom-t) end
+    end
+    if slot.edges then
+        local points={{l,t},{r,t},{r,bottom},{l,bottom}}
+        for i,obj in ipairs(slot.edges) do
+            assign(obj,"Visible",cfg.Boxes)
+            if cfg.Boxes then
+                vector2(obj,"From",points[i][1],points[i][2]); vector2(obj,"To",points[i%4+1][1],points[i%4+1][2])
+            end
+        end
+    end
+    if slot.tracer then
+        assign(slot.tracer,"Visible",cfg.Tracers)
+        if cfg.Tracers then vector2(slot.tracer,"From",vw/2,vh-2); vector2(slot.tracer,"To",(l+r)/2,bottom) end
+    end
+    if slot.label then
+        local ok,err=pcall(function()
+            assign(slot.label,"Visible",cfg.Labels)
+            if cfg.Labels then
+                assign(slot.label,"Text","BODY "..e.name.." | TEAM "..(e.team and "~"..e.team or "?")..(cfg.Distances and string.format(" | %.0f studs",e.distance) or ""))
+                vector2(slot.label,"Position",math.min(l,math.max(0,vw-160)),math.max(0,t-17))
+            end
+        end)
+        if not ok then
+            pcall(assign,slot.label,"Visible",false); slot.label=nil; features.text=false
+            stats.drawErrors=stats.drawErrors+1; event("Label disabled; boxes continue: "..str(err))
+        end
+    end
+end
+local function aimHeld()
+    local ok,down=pcall(iskeypressed,cfg.AimHoldKey)
+    local available=ok and type(down)=="boolean"
+    down=available and down or false
+    if cfg.AimHoldKey==2 and type(ismouse2pressed)=="function" then
+        local good,value=pcall(ismouse2pressed)
+        if good and type(value)=="boolean" then available=true; down=down or value end
+    end
+    return down,available
+end
+local function hideAim()
+    for _,obj in pairs(A.objects) do pcall(assign,obj,"Visible",false) end
+end
+local function aimIdle(reason)
+    resetAim(reason); hideAim(); A.lastTick=clock(); recordAimGate()
+end
+local function aimCandidate(e,vw,vh,radius,acquiring)
+    if not C.LocalTeam then return nil,"local team unavailable" end
+    if not e.team then return nil,"unknown/conflicting uniform" end
+    if e.team==C.LocalTeam then return nil,"teammate uniform" end
+    if e.state~="rendered" or not e.lastBox then return nil,"no current on-screen body: "..str(e.state,90) end
+    if not finite(e.distance) then return nil,"body distance unavailable" end
+    if cfg.AimMaxDistance>0 and e.distance>cfg.AimMaxDistance then return nil,"beyond aim distance limit" end
+    local upper=e.framePositions and e.framePositions.uppertorso
+    local lower=e.framePositions and e.framePositions.lowertorso
+    local head=e.framePositions and e.framePositions.head
+    local p,source
+    if cfg.AimPoint=="Head" then p=head; source="Head center"
+    elseif cfg.AimPoint=="Chest" then p=upper; source="UpperTorso center"
+    else p=upper or lower; source="Torso center mass" end
+    if not p then return nil,"selected "..cfg.AimPoint.." position unavailable" end
+    local x,y,z=p[1],p[2],p[3]
+    if cfg.AimPoint=="Torso" and upper and lower then x=(upper[1]+lower[1])/2; y=(upper[2]+lower[2])/2; z=(upper[3]+lower[3])/2 end
+    local anchor=e.framePositions[e.anchorName]
+    if not anchor or math.max(math.abs(x-anchor[1]),math.abs(y-anchor[2]),math.abs(z-anchor[3]))>cfg.MaxBodySpan then return nil,"selected point outside compact body" end
+    local sx,sy=project(x,y,z)
+    if not sx or sx<0 or sy<0 or sx>vw or sy>vh then return nil,"torso projects offscreen" end
+    local dx,dy=sx-vw/2,sy-vh/2
+    local distance=math.sqrt(dx*dx+dy*dy)
+    local bodyAssisted=false
+    if distance>radius and acquiring and cfg.AimBodyAcquire and distance<=cfg.AimTrackRadius then
+        local box=e.lastBox
+        local bx=clamp(vw/2,box[1],box[3])-vw/2
+        local by=clamp(vh/2,box[2],box[4])-vh/2
+        bodyAssisted=bx*bx+by*by<=radius*radius
+    end
+    if distance>radius and not bodyAssisted then return nil,string.format("outside circle: %.1fpx > %.1fpx",distance,radius),distance,"outside acquisition/tracking radius" end
+    return {entry=e,x=sx,y=sy,dx=dx,dy=dy,error=distance,source=source,bodyAssisted=bodyAssisted}
+end
+local function paintAim(vw,vh,target)
+    local function ring(key,radius,x,y,color)
+        if not features.circle then return end
+        local obj=A.objects[key]
+        if not obj then
+            obj=tryDrawing("Circle",color)
+            if not obj then features.circle=false; return end
+            A.objects[key]=obj; assign(obj,"Filled",false)
+            pcall(function() obj.NumSides=cfg.AimCircleSegments end)
+        end
+        assign(obj,"Radius",radius); vector2(obj,"Position",x,y); assign(obj,"Visible",true)
+    end
+    hideAim()
+    if cfg.AimShowFOV then
+        ring("track",cfg.AimTrackRadius,vw/2,vh/2,gray)
+        ring("acquire",math.min(cfg.AimAcquireRadius,cfg.AimTrackRadius),vw/2,vh/2,purple)
+    end
+    if target then ring("target",5,target.x,target.y,pale) end
+end
+local function aimStep(now,vw,vh)
+    local dt=A.lastTick and now-A.lastTick or 1/cfg.UpdateHz; A.lastTick=now
+    if not cfg.AimEnabled then aimIdle("disabled in menu"); return end
+    if C.LocalAimBlock or not C.LocalTeam then aimIdle(C.LocalAimBlock or "local team unknown / spectator"); return end
+    if not C.FocusAvailable or not C.Focused then aimIdle("focus not confirmed"); return end
+    if C.MenuOpen or A.capture then aimIdle("menu open / bind capture"); return end
+    if A.fault then aimIdle(A.fault); return end
+    local down,available
+    if cfg.AimAutomatic then down=true; available=true; A.waitRelease=false
+    else down,available=aimHeld() end
+    if not available then aimIdle("hold-key state unavailable"); return end
+    local pressed=down and not A.wasHeld; A.wasHeld=down
+    if down then A.holdFrames=A.holdFrames+1 end
+    if pressed then A.holdPresses=A.holdPresses+1 end
+    local target
+    if not down then
+        resetAim("ready: aim near a visible torso, then hold bind"); A.waitRelease=false
+    elseif A.waitRelease then A.gate="release hold key to rearm"
+    else
+        A.heldFrames=A.heldFrames+1; A.eligible=0
+        if not A.selected then
+            if not A.waitStarted then A.waitStarted=now end
+            A.acquireScans=A.acquireScans+1; A.closestDistance=nil; A.closestName=nil; A.lastRejects={}
+            local best
+            for _,e in ipairs(entries) do
+                local candidate,reason,screenDistance,category=aimCandidate(e,vw,vh,math.min(cfg.AimAcquireRadius,cfg.AimTrackRadius),true)
+                local distance=candidate and candidate.error or screenDistance
+                if distance and (not A.closestDistance or distance<A.closestDistance) then A.closestDistance=distance; A.closestName=e.name end
+                if candidate then
+                    A.eligible=A.eligible+1
+                    if not best or candidate.error<best.error then best=candidate end
+                else
+                    local key=category or reason or "unknown rejection"
+                    A.rejects[key]=(A.rejects[key] or 0)+1; A.lastRejects[e.name]=reason or key
+                end
+            end
+            if best then
+                A.selected=best.entry.key; A.acquisitions=A.acquisitions+1
+                A.lastAcquireWait=now-A.waitStarted; A.acquireWaitTotal=A.acquireWaitTotal+A.lastAcquireWait
+                A.acquireWaitMax=math.max(A.acquireWaitMax,A.lastAcquireWait); A.waitStarted=nil
+                if best.bodyAssisted then A.bodyAssisted=A.bodyAssisted+1 end
+                A.rx=0; A.ry=0; target=best
+                event("Aim acquired body "..best.entry.name.." (uniform enemy, visibility NOT checked)")
+            else
+                A.emptyScans=A.emptyScans+1; A.rx=0; A.ry=0
+                A.gate="waiting: move a visible enemy torso inside the small circle"
+            end
+        end
+        if A.selected and not target then
+            for _,e in ipairs(entries) do if e.key==A.selected then target=aimCandidate(e,vw,vh,cfg.AimTrackRadius); break end end
+            if not target then resetAim("target lost/left FOV; release to choose another") end
+        end
+        if target then
+            A.lastError=target.error; A.lastTarget=target.entry.name; A.lastPointSource=target.source
+            if A.sample then
+                if target.error<A.sample-.5 then A.improved=A.improved+1 end
+                if target.error>A.sample+.5 then A.worsened=A.worsened+1 end
+                A.sample=nil
+            end
+            if cfg.AimPreview then A.gate="preview only"; A.previewFrames=A.previewFrames+1; A.rx=0; A.ry=0
+            elseif type(mousemoverel)~="function" then resetAim("mousemoverel unavailable")
+            elseif dt>.12 or dt<=0 then A.gate="frame stall / invalid dt"; A.rx=0; A.ry=0
+            elseif target.error<=cfg.AimDeadzone then A.gate="deadzone"; A.deadzoneFrames=A.deadzoneFrames+1; A.rx=0; A.ry=0
+            else
+                local safeDt=clamp(dt,.001,.05)
+                local alpha=1-math.exp(-safeDt/cfg.AimSmoothTime)
+                local x,y=target.dx*alpha*cfg.AimGain,target.dy*alpha*cfg.AimGain
+                local length=math.sqrt(x*x+y*y)
+                local limit=math.min(cfg.AimMaxStep,cfg.AimMaxPixelsPerSecond*safeDt)
+                if length>limit then x=x*limit/length; y=y*limit/length end
+                x,y=x+A.rx,y+A.ry
+                local ix=x>=0 and math.floor(x) or math.ceil(x)
+                local iy=y>=0 and math.floor(y) or math.ceil(y)
+                local integerLength=math.sqrt(ix*ix+iy*iy)
+                if integerLength>cfg.AimMaxStep then
+                    local scale=cfg.AimMaxStep/integerLength
+                    ix=ix>=0 and math.floor(ix*scale) or math.ceil(ix*scale)
+                    iy=iy>=0 and math.floor(iy*scale) or math.ceil(iy*scale)
+                    if ix==0 and iy==0 then
+                        if math.abs(x)>=math.abs(y) then ix=x>=0 and 1 or -1 else iy=y>=0 and 1 or -1 end
+                    end
+                end
+                A.rx=clamp(x-ix,-1,1); A.ry=clamp(y-iy,-1,1)
+                if cfg.AimInvertX then ix=-ix end
+                if cfg.AimInvertY then iy=-iy end
+                A.gate=(cfg.AimAutomatic and "automatic tracking" or "tracking held target").." (no wall check)"
+                if ix~=0 or iy~=0 then
+                    local ok,result=pcall(mousemoverel,ix,iy); A.calls=A.calls+1
+                    if not ok or result==false then
+                        A.failures=A.failures+1; A.fault="mousemoverel failed; see report"; cfg.AimEnabled=false
+                        event(A.fault..": "..str(result)); resetAim(A.fault)
+                    else
+                        A.totalX=A.totalX+ix; A.totalY=A.totalY+iy
+                        A.maxStep=math.max(A.maxStep,math.sqrt(ix*ix+iy*iy)); A.sample=target.error
+                    end
+                end
+            end
+        end
+    end
+    if not A.drawFault then
+        local good,err=pcall(paintAim,vw,vh,target)
+        if not good then A.drawFault=true; hideAim(); event("Aim rings disabled: "..str(err)) end
+    end
+    recordAimGate()
+end
+local visualRows={{"ESP enabled","Enabled"},{"Body boxes","Boxes"},{"Tracers","Tracers"},{"Body ID labels","Labels"},{"Distance labels","Distances"},{"Enemies only (uniforms)","EnemiesOnly"},{"Skeleton","Skeleton"},{"Head dot","HeadDot"},{"Head dot radius","radius"},{"Copy diagnostics","report"},{"Stop and remove client","quit"}}
+local aimRows={{"Aim test enabled","AimEnabled"},{"Hold key (click to bind)","bind"},{"Automatic aim (no hold)","AimAutomatic"},{"Preview only (no movement)","AimPreview"},{"Aim point","AimPoint"},{"Acquire radius","AimAcquireRadius"},{"Body-aware acquisition","AimBodyAcquire"},{"Tracking radius","AimTrackRadius"},{"Smooth time","AimSmoothTime"},{"Mouse gain","AimGain"},{"Max movement per call","AimMaxStep"},{"Show aim circles","AimShowFOV"},{"Copy diagnostics","report"},{"Stop and remove client","quit"}}
+local effectRows={{"Sound markers","SoundESP"},{"Footsteps / landings","SoundSteps"},{"Gunshots","SoundShots"},{"Other named cues","SoundOther"},{"Hide inferred allies","SoundHideAllies"},{"Sound range","SoundRange"},{"Marker lifetime","SoundLifetime"},{"Filled body chams","Chams"},{"Chams opacity","ChamsOpacity"},{"Copy diagnostics","report"},{"Stop and remove client","quit"}}
+local pages={visualRows,aimRows,effectRows}
+local menuRows=visualRows
+local choices={AimPoint={"Torso","Head","Chest"},AimAcquireRadius={20,35,50,75,100,125,160},AimTrackRadius={60,90,120,160,200,250},AimSmoothTime={.12,.22,.30,.40},AimGain={.25,.5,.65,1,1.5},AimMaxStep={1,2,3,4,6}}
+local function keyName(key)
+    local names={[1]="LMB",[2]="RMB",[4]="MMB",[5]="Mouse4",[6]="Mouse5",[16]="Shift",[17]="Ctrl",[18]="Alt",[32]="Space"}
+    return names[key] or ((key>=48 and key<=90) and string.char(key) or ("VK "..key))
+end
+local function toggleRow(row)
+    local key=menuRows[row][2]
+    if key=="Enabled" then C.Enabled=not C.Enabled
+    elseif key=="report" then report(true)
+    elseif key=="quit" then C.Stop("menu stop"); return
+    elseif key=="radius" then cfg.HeadDotRadius=cfg.HeadDotRadius%3+1
+    elseif key=="bind" then A.capture=true; A.captureReleased=false; resetAim("waiting for new hold key")
+    elseif choices[key] then
+        local list=choices[key]; local index=0
+        for i,value in ipairs(list) do if value==cfg[key] then index=i; break end end
+        cfg[key]=list[index%#list+1]; resetAim("aim setting changed; release hold key")
+    else cfg[key]=not cfg[key] end
+    if key=="AimEnabled" or key=="AimPreview" or key=="AimAutomatic" then resetAim("aim mode changed") end
+    ui.dirty=true
+end
+local function uiObject(index,kind,color)
+    local obj=ui.objects[index]
+    if not obj then obj=tryDrawing(kind,color); ui.objects[index]=obj
+        if obj then pcall(assign,obj,"ZIndex",kind=="Text" and 102 or (index==1 and 100 or 101)) end
+    end
+    return obj
+end
+-- Every numeric control has its own unit, bounds and fine increment.
+local sliderSpecs={
+    radius={key="HeadDotRadius",min=1,max=3,step=1,format="%.0f px"},
+    AimAcquireRadius={min=20,max=160,step=1,format="%.0f px"},
+    AimTrackRadius={min=60,max=250,step=1,format="%.0f px"},
+    AimSmoothTime={min=.12,max=.40,step=.01,format="%.2f s"},
+    AimGain={min=.25,max=1.5,step=.05,format="%.2fx"},
+    AimMaxStep={min=1,max=6,step=1,format="%.0f px"},
+    SoundRange={min=50,max=2500,step=10,format="%.0f studs"},
+    SoundLifetime={min=.5,max=4,step=.1,format="%.1f s"},
+    ChamsOpacity={min=.05,max=.80,step=.05,format="%.0f%%",percent=true},
+}
+local function sliderText(spec,value)
+    return string.format(spec.format,spec.percent and value*100 or value)
+end
+local function setSlider(row,value)
+    local name=menuRows[row][2]; local spec=sliderSpecs[name]; if not spec then return end
+    local key=spec.key or name
+    value=clamp(spec.min+math.floor((value-spec.min)/spec.step+.5)*spec.step,spec.min,spec.max)
+    if math.abs(cfg[key]-value)>.000001 then
+        cfg[key]=value; ui.dirty=true
+        if name:sub(1,3)=="Aim" then resetAim("aim setting changed; release hold key") end
+    end
+end
+local function paintPanel()
+    if not C.MenuOpen then for _,obj in pairs(ui.objects) do pcall(assign,obj,"Visible",false) end; return end
+    if not features.text then return end
+    local total=0; ui.layout={}
+    for i,row in ipairs(menuRows) do
+        local h=sliderSpecs[row[2]] and 54 or 30
+        ui.layout[i]={top=ui.y+43+total,height=h,left=ui.x+30,right=ui.x+ui.w-78}
+        total=total+h
+    end
+    ui.h=106+total
+    for row=#menuRows+1,14 do
+        for _,index in ipairs({100+row,200+row,row+2}) do
+            if ui.objects[index] then assign(ui.objects[index],"Visible",false) end
+        end
+    end
+    local used={}
+    local function rectangle(index,x,y,w,h,color)
+        local obj=uiObject(index,"Square",color)
+        if obj then assign(obj,"Filled",true); assign(obj,"Color",color); vector2(obj,"Position",x,y); vector2(obj,"Size",w,h); assign(obj,"Visible",true) end
+        return obj
+    end
+    local function label(index,text,x,y,color,small)
+        local obj=uiObject(index,"Text",color)
+        if obj then
+            assign(obj,"Text",text); assign(obj,"Color",color); vector2(obj,"Position",x,y)
+            if small then pcall(assign,obj,"Size",11) end
+            assign(obj,"Visible",true)
+        end
+    end
+    if features.square then
+        rectangle(1,ui.x,ui.y,ui.w,ui.h,background)
+        rectangle(2,ui.x,ui.y,ui.w,3,purple)
+    end
+    label(100,"KONTRA 1.7",ui.x+12,ui.y+12,ink)
+    for page=1,3 do
+        local x=ui.x+146+(page-1)*88
+        if features.square then rectangle(19+page,x,ui.y+8,86,24,A.page==page and purple or background) end
+        label(149+page,({"VISUALS","AIM TEST","EFFECTS"})[page],x+5,ui.y+12,ink)
+    end
+    for i,row in ipairs(menuRows) do
+        local y=ui.layout[i].top; local name=row[2]; local spec=sliderSpecs[name]
+        local active=name=="Enabled" and C.Enabled or (name~="Enabled" and cfg[name])
+        label(100+i,(ui.row==i and "> " or "  ")..row[1],ui.x+12,y,ink)
+        local value=active and "ON" or "OFF"
+        if name=="report" then value="COPY"
+        elseif name=="quit" then value="STOP"
+        elseif name=="bind" then value=A.capture and "PRESS KEY" or keyName(cfg.AimHoldKey)
+        elseif spec then value=sliderText(spec,cfg[spec.key or name])
+        elseif choices[name] then value=tostring(cfg[name]) end
+        label(200+i,value,ui.x+275,y,pale)
+        local indicator=ui.objects[i+2]
+        if not indicator and features.square then indicator=uiObject(i+2,"Square",gray) end
+        if indicator then
+            assign(indicator,"Color",active and purple or gray); assign(indicator,"Filled",true)
+            vector2(indicator,"Position",ui.x+252,y+4); vector2(indicator,"Size",12,12)
+            assign(indicator,"Visible",not spec and (type(cfg[name])=="boolean" or name=="Enabled"))
+        end
+        if spec then
+            local base=1000+i*10; local r=ui.layout[i]; local width=r.right-r.left
+            local ratio=clamp((cfg[spec.key or name]-spec.min)/(spec.max-spec.min),0,1)
+            if features.square then
+                rectangle(base,r.left,y+27,width,5,gray)
+                rectangle(base+1,r.left,y+27,math.max(1,width*ratio),5,purple)
+                rectangle(base+2,r.left+width*ratio-4,y+23,8,13,pale)
+                for n=0,2 do used[base+n]=true; ui.sliderIDs[base+n]=true end
+            end
+            label(base+3,sliderText(spec,spec.min),r.left,y+35,gray,true)
+            label(base+4,sliderText(spec,spec.max),r.right-55,y+35,gray,true)
+            label(base+5,"-",ui.x+ui.w-49,y,ink)
+            label(base+6,"+",ui.x+ui.w-24,y,ink)
+            for n=3,6 do used[base+n]=true; ui.sliderIDs[base+n]=true end
+        end
+    end
+    for index in pairs(ui.sliderIDs) do if not used[index] and ui.objects[index] then assign(ui.objects[index],"Visible",false) end end
+    local footer=50+total
+    label(300,A.page==1 and ("Team: "..(C.LocalTeam or "UNKNOWN").." | ~ uniform") or (A.page==2 and "NO WALL CHECK: choose a visible body" or "Sound cue positions; ownership may be unknown"),ui.x+12,ui.y+footer,gray)
+    label(301,"Drag tracks | - / + fine steps | values shown above",ui.x+12,ui.y+footer+19,gray)
+    label(302,"RIGHT SHIFT opens / closes this menu",ui.x+12,ui.y+footer+37,gray)
+    ui.dirty=false
+end
+local function controls(now)
+    local focused=true
+    if type(isrbxactive)=="function" then local ok,value=pcall(isrbxactive); focused=ok and value==true end
+    C.FocusAvailable=type(isrbxactive)=="function"; C.Focused=C.FocusAvailable and focused
+    -- Right Shift only changes menu visibility. No feature-toggle hotkeys.
+    local menu=edge(cfg.MenuKey)
+    if focused then
+        if menu then C.MenuOpen=not C.MenuOpen; ui.dirty=true end
+    end
+    if A.capture and focused and C.MenuOpen then
+        local reserved={[cfg.MenuKey]=true}
+        local pressedKey
+        for code=1,254 do
+            local ok,value=pcall(iskeypressed,code)
+            if ok and value==true then pressedKey=code; break end
+        end
+        if not pressedKey then A.captureReleased=true
+        elseif pressedKey==0x1B then A.capture=false; ui.dirty=true
+        elseif A.captureReleased and not reserved[pressedKey] then
+            cfg.AimHoldKey=pressedKey; A.capture=false; resetAim("hold key rebound; release it first"); ui.dirty=true
+        end
+    elseif A.capture and not C.MenuOpen then A.capture=false end
+    if C.MenuOpen and focused then
+        if now>=ui.nextMouse then
+            ui.nextMouse=now+.5
+            local ok,value=pcall(function() return game:GetService("Players").LocalPlayer:GetMouse() end)
+            if ok then ui.mouse=value end
+        end
+        local x,y=get(ui.mouse,"X"),get(ui.mouse,"Y")
+        local ok,pressed=pcall(iskeypressed,1)
+        local mouseDown=ok and pressed==true
+        if type(ismouse1pressed)=="function" then local good,value=pcall(ismouse1pressed); if good and value then mouseDown=true end end
+        if not mouseDown then ui.slider=nil end
+        if not A.capture and mouseDown and not ui.wasDown and finite(x) and finite(y) and x>=ui.x and x<=ui.x+ui.w then
+            if y>=ui.y+8 and y<=ui.y+32 and x>=ui.x+146 and x<ui.x+410 then
+                A.page=math.floor((x-ui.x-146)/88)+1; menuRows=pages[A.page]; ui.row=1; ui.slider=nil; ui.dirty=true
+            else
+                for row,r in ipairs(ui.layout) do
+                    if y>=r.top-3 and y<r.top+r.height-3 then
+                        ui.row=row; local name=menuRows[row][2]; local spec=sliderSpecs[name]
+                        if spec then
+                            if x>=ui.x+ui.w-60 and y<r.top+20 then
+                                setSlider(row,cfg[spec.key or name]+(x<ui.x+ui.w-32 and -1 or 1)*spec.step)
+                            elseif y>=r.top+19 and y<=r.top+37 then ui.slider=row end
+                        else toggleRow(row) end
+                        break
+                    end
+                end
+            end
+        end
+        if ui.slider and mouseDown and not A.capture and finite(x) then
+            local r=ui.layout[ui.slider]; local spec=sliderSpecs[menuRows[ui.slider][2]]
+            setSlider(ui.slider,spec.min+clamp((x-r.left)/(r.right-r.left),0,1)*(spec.max-spec.min))
+        end
+        if not C.Running then return end
+        ui.wasDown=mouseDown
+    else ui.wasDown=false; ui.slider=nil end
+    if ui.dirty then
+        local ok,err=pcall(paintPanel)
+        if not ok then event("Panel failed: "..tostring(err)); C.MenuOpen=false
+            for _,obj in pairs(ui.objects) do pcall(assign,obj,"Visible",false) end
+            ui.dirty=false
+        end
+    end
+end
+function S.enqueue(obj,parentPath,depth)
+    if not obj or S.enqueued>=cfg.SoundProbeNodeCap then
+        if obj then S.coverage["discovery node/queue cap reached"]=true end
+        return
+    end
+    local key=id(obj)
+    if S.seen[key] then return end
+    S.seen[key]=true; S.enqueued=S.enqueued+1
+    S.queue[#S.queue+1]={obj=obj,parentPath=parentPath,depth=depth or 0}
+end
+function S.read(e,key)
+    S.reads=S.reads+1
+    local ok,value=pcall(function() return e.obj[key] end)
+    local status=not ok and "read error" or (value==nil and "nil/unavailable" or type(value))
+    if not ok then S.readErrors=S.readErrors+1 end
+    if ok then e.fields[key]={status=status,value=value}; return value,status end
+    e.fields[key]={status=status,value=str(value,80)}; return nil,status
+end
+function S.position(e)
+    local parent=get(e.obj,"Parent")
+    for i=1,8 do
+        if not parent then break end
+        local class=get(parent,"ClassName")
+        if class=="Attachment" then
+            local point=xyz(get(parent,"WorldPosition"))
+            if point then return point,"Attachment.WorldPosition (compatibility probe)" end
+        elseif class=="Part" or class=="MeshPart" or class=="UnionOperation" then
+            local point=xyz(get(parent,"Position"))
+            if point then return point,"parent part center (approximate emitter origin)" end
+        elseif class=="Camera" then return nil,"camera-local / no verified spatial origin" end
+        parent=get(parent,"Parent")
+    end
+    return nil,"no readable spatial ancestor"
+end
+function S.observe(e,value,now)
+    if type(value)~="boolean" then return end
+    if value and e.lastPlaying~=true then
+        local point,kind=S.position(e); e.positionKind=kind; e.starts=e.starts+1
+        local label=e.lastPlaying==false and "OBSERVED FALSE->TRUE" or "FIRST SAMPLE PLAYING (start time unknown)"
+        local location=point and string.format("(%.2f,%.2f,%.2f)",point[1],point[2],point[3]) or "unavailable"
+        S.events[#S.events+1]=string.format("+%.3fs %s %s hint=%s position=%s source=%s",now-S.started,label,e.path,e.hint,location,kind)
+        if #S.events>80 then table.remove(S.events,1); S.eventsDropped=S.eventsDropped+1 end
+    end
+    e.lastPlaying=value
+end
+function S.discover()
+    if S.seed<5 then
+        S.seed=S.seed+1
+        local obj,label
+        if S.seed==1 then obj=root; label="Workspace"
+        elseif S.seed==2 then obj=camera; label="Workspace"
+        elseif S.seed==3 then obj=world; label="game"
+        else
+            local service=S.seed==4 and "SoundService" or "ReplicatedStorage"
+            local ok,value=pcall(function() return game:GetService(service) end)
+            if ok then obj=value else S.coverage[service.." unavailable"]=true end
+            label="game"
+        end
+        S.enqueue(obj,label,0); return
+    end
+    local item=S.queue[S.head]
+    if not item then
+        if clock()>=S.nextSweep and S.enqueued<cfg.SoundProbeNodeCap then
+            S.queue={}; S.head=1; S.seen={}; S.seed=0; S.nextSweep=clock()+5
+        end
+        return
+    end
+    if not item.visited then
+        item.visited=true; S.nodes=S.nodes+1
+        local name=str(get(item.obj,"Name"),90); local class=get(item.obj,"ClassName")
+        item.path=item.parentPath.."/"..name
+        if class then S.classes[class]=(S.classes[class] or 0)+1 end
+        if class=="Sound" and not S.known[id(item.obj)] then
+            S.known[id(item.obj)]=true
+            if #S.sounds<cfg.SoundProbeTrackCap then
+                local lower=string.lower(item.path)
+                local hint=(lower:find("foot",1,true) or lower:find("step",1,true) or lower:find("walk",1,true)) and "FOOTSTEP_NAME_HINT" or
+                    ((lower:find("shot",1,true) or lower:find("gun",1,true) or lower:find("fire",1,true)) and "GUNSHOT_NAME_HINT" or "unclassified")
+                S.sounds[#S.sounds+1]={obj=item.obj,path=item.path,hint=hint,fields={},probeIndex=1,starts=0,nextSample=0}
+            else S.trackDropped=S.trackDropped+1; S.coverage["tracked Sound cap reached"]=true end
+        end
+        if item.depth<12 then
+            item.children=children(item.obj); item.index=1
+            if not item.children then S.coverage["some descendants unreadable"]=true end
+        else S.coverage["discovery depth cap reached"]=true end
+        if not item.children or #item.children==0 then S.head=S.head+1 end
+    else
+        local child=item.children[item.index]
+        if child then item.index=item.index+1; S.enqueue(child,item.path,item.depth+1)
+        else S.head=S.head+1 end
+    end
+end
+function S.sample(now)
+    if #S.sounds==0 then return end
+    S.cursor=S.cursor%#S.sounds+1
+    local e=S.sounds[S.cursor]
+    if now<e.nextSample then return end
+    e.nextSample=now+cfg.SoundProbeInterval; S.samples=S.samples+1
+    local fields={"IsPlaying","Playing","SoundId","TimePosition","PlaybackLoudness","Volume","Looped","RollOffMaxDistance"}
+    local key=fields[e.probeIndex]
+    if e.playKey and e.playKey~=key then
+        local value=S.read(e,e.playKey); S.observe(e,value,now)
+    end
+    if key then
+        local value=S.read(e,key); e.probeIndex=e.probeIndex+1
+        if (key=="IsPlaying" or key=="Playing") and type(value)=="boolean" then
+            if not e.playKey or key=="IsPlaying" then e.playKey=key end
+            if e.playKey==key then S.observe(e,value,now) end
+        end
+    end
+end
+function S.tick(now,mainCost)
+    if not S.running then return end
+    if now-S.started>=cfg.SoundProbeDuration then
+        S.running=false; S.state="complete"; S.queue={}
+        event("Sound diagnostic complete; included in Copy diagnostics report"); return
+    end
+    if mainCost>=.010 then S.skippedFrames=S.skippedFrames+1; return end
+    local before=clock()
+    for i=1,4 do
+        if clock()-before>.0015 then break end
+        S.turn=S.turn+1
+        if S.turn%2==1 then S.discover() else S.sample(now) end
+    end
+    local cost=clock()-before; S.workFrames=S.workFrames+1
+    S.workTotal=S.workTotal+cost; S.workMax=math.max(S.workMax,cost)
+end
+-- Named transient emitter Parts are the game's sound cues. This collector does
+-- not assume that classic Sound instances, playback callbacks or audio wires exist.
+function FX.classify(name)
+    if type(name)~="string" then return nil end
+    if name:match("^Footsteps%.") then
+        return name:match("^Footsteps%.Land") and "LAND" or "STEP"
+    elseif name:match("^Weapons%..+%.[Ff]ire$") then return "SHOT"
+    elseif name:match("^Weapons%.") then return "RELOAD"
+    elseif name:match("^Impacts%.") then return "IMPACT"
+    elseif name:match("^Bomb%.") then return "BOMB CUE"
+    elseif name:match("^Misc%.") then return "MISC" end
+end
+function FX.cueTeam(name,kind)
+    -- These are name-suffix inferences, never authoritative ownership.
+    if kind~="STEP" and kind~="LAND" and kind~="IMPACT" then return nil end
+    if name:sub(-2)=="Ct" or name:sub(-2)=="CT" then return "CT" end
+    if name:sub(-1)=="T" then return "T" end
+end
+function FX.scan(now,camPos)
+    if now<FX.nextScan then return end
+    FX.nextScan=now+cfg.SoundPollInterval; FX.polls=FX.polls+1
+    local debris
+    local ok,value=pcall(function() return world:FindFirstChild("Debris") end)
+    if ok and value then
+        local good,folder=pcall(function() return value:FindFirstChild("Sounds") end)
+        if good then debris=folder end
+    end
+    if not same(debris,FX.folder) then
+        FX.folder=debris; FX.seen={}; FX.warm=false; FX.marks={}
+    end
+    if not debris then FX.status="waiting: Workspace.Debris.Sounds"; return end
+    local list=children(debris)
+    if not list then FX.status="cue folder children unreadable"; return end
+    FX.status="tracking named cue Parts"; FX.lastChildren=#list
+    local limited=#list>cfg.SoundScanCap
+    if limited then FX.scanLimited=FX.scanLimited+1 end
+    local seen={}; local count=math.min(#list,cfg.SoundScanCap)
+    for i=1,count do
+        local obj=list[i]; local name=get(obj,"Name"); local kind=FX.classify(name)
+        local class=kind and get(obj,"ClassName")
+        if kind and (class=="Part" or class=="MeshPart") and same(get(obj,"Parent"),debris) then
+            local key=id(obj); seen[key]=true; FX.candidates=FX.candidates+1
+            if not FX.seen[key] then
+                if not FX.warm then FX.baseline=FX.baseline+1
+                elseif C.Enabled and cfg.SoundESP then
+                    local enabled=((kind=="STEP" or kind=="LAND") and cfg.SoundSteps) or (kind=="SHOT" and cfg.SoundShots) or (kind~="STEP" and kind~="LAND" and kind~="SHOT" and cfg.SoundOther)
+                    local pos=enabled and xyz(get(obj,"Position"))
+                    if pos then
+                        local distance=math.sqrt((pos[1]-camPos[1])^2+(pos[2]-camPos[2])^2+(pos[3]-camPos[3])^2)
+                        local team=FX.cueTeam(name,kind)
+                        if cfg.SoundHideAllies and team and C.LocalTeam and team==C.LocalTeam then FX.allyHidden=FX.allyHidden+1
+                        elseif distance>=6 and distance<=cfg.SoundRange and (cfg.UnavailableDistance<=0 or distance<cfg.UnavailableDistance) then
+                            FX.emitted=FX.emitted+1
+                            FX.marks[#FX.marks+1]={pos=pos,at=now,kind=kind,team=team,name=name}
+                            if #FX.marks>cfg.SoundMaxMarkers then table.remove(FX.marks,1); FX.dropped=FX.dropped+1 end
+                            FX.recent[#FX.recent+1]=string.format("+%.2fs %s %s source=(%.2f,%.2f,%.2f) team=%s",now-started,kind,str(name,80),pos[1],pos[2],pos[3],team and ("~"..team.." name inference") or "unknown")
+                            if #FX.recent>20 then table.remove(FX.recent,1) end
+                        else FX.invalid=FX.invalid+1 end
+                    elseif enabled then FX.invalid=FX.invalid+1 end
+                end
+            end
+        end
+    end
+    if limited then
+        -- Keep known identities when coverage is partial; never replay old cues.
+        for key in pairs(seen) do FX.seen[key]=true end
+        local known=0; for _ in pairs(FX.seen) do known=known+1 end
+        if known>4096 then FX.seen=seen; FX.warm=false; FX.status="identity cap: rebaselining" end
+    else FX.seen=seen end
+    FX.warm=true
+end
+function FX.sound(now,camPos)
+    if not FX.soundFault then
+        local ok,err=pcall(FX.scan,now,camPos)
+        if not ok then FX.errors=FX.errors+1; FX.soundFault=str(err); event("Sound markers disabled: "..str(err)) end
+    end
+    for i=#FX.marks,1,-1 do
+        if now-FX.marks[i].at>=cfg.SoundLifetime then table.remove(FX.marks,i); FX.expired=FX.expired+1 end
+    end
+    local shown=0
+    for _,mark in ipairs(FX.marks) do
+        local pos=mark.pos
+        local distance=math.sqrt((pos[1]-camPos[1])^2+(pos[2]-camPos[2])^2+(pos[3]-camPos[3])^2)
+        local ally=cfg.SoundHideAllies and mark.team and C.LocalTeam and mark.team==C.LocalTeam
+        local selected=(mark.kind=="STEP" or mark.kind=="LAND") and cfg.SoundSteps or (mark.kind=="SHOT" and cfg.SoundShots) or (mark.kind~="STEP" and mark.kind~="LAND" and mark.kind~="SHOT" and cfg.SoundOther)
+        local x,y
+        if C.Enabled and cfg.SoundESP and selected and not ally and distance<=cfg.SoundRange then x,y=project(pos[1],pos[2],pos[3]) end
+        if x and not FX.soundFault then
+            shown=shown+1; local slot=FX.pool[shown]
+            if not slot then slot={}; FX.pool[shown]=slot end
+            local color=mark.team and (mark.team==C.LocalTeam and gray or purple) or pale
+            if not slot.ring and not slot.ringUnavailable and features.circle then
+                slot.ring=tryDrawing("Circle",color)
+                if slot.ring then assign(slot.ring,"Filled",false); assign(slot.ring,"NumSides",48) end
+                slot.ringUnavailable=not slot.ring
+            end
+            if not slot.label and not slot.labelUnavailable and features.text then
+                slot.label=tryDrawing("Text",color); slot.labelUnavailable=not slot.label
+            end
+            local age=clamp((now-mark.at)/cfg.SoundLifetime,0,1)
+            if slot.ring then
+                assign(slot.ring,"Color",color); vector2(slot.ring,"Position",x,y)
+                assign(slot.ring,"Radius",4+age*11); assign(slot.ring,"Visible",true)
+                pcall(assign,slot.ring,"Transparency",1-age*.85)
+            end
+            if slot.label then
+                assign(slot.label,"Color",color)
+                assign(slot.label,"Text",mark.kind..(mark.team and (" ~"..mark.team) or " ?")..string.format(" | %.0f studs | %.1fs",distance,now-mark.at))
+                vector2(slot.label,"Position",x+9,y-12); assign(slot.label,"Visible",true)
+                pcall(assign,slot.label,"Transparency",1-age*.85)
+            end
+        end
+    end
+    FX.visible=shown
+    for i,slot in pairs(FX.pool) do if i>shown then for _,key in ipairs({"ring","label"}) do if slot[key] then pcall(assign,slot[key],"Visible",false) end end end end
+end
+-- Independent convex hull over each current oriented body part. No mesh,
+-- Highlight instance, material change or wall-visibility inference is involved.
+function FX.hull(points)
+    table.sort(points,function(a,b) return a[1]==b[1] and a[2]<b[2] or a[1]<b[1] end)
+    local function turn(a,b,c) return (b[1]-a[1])*(c[2]-a[2])-(b[2]-a[2])*(c[1]-a[1]) end
+    local h={}
+    for _,p in ipairs(points) do
+        while #h>=2 and turn(h[#h-1],h[#h],p)<=0 do table.remove(h) end
+        h[#h+1]=p
+    end
+    local lower=#h
+    for i=#points-1,1,-1 do
+        local p=points[i]
+        while #h>lower and turn(h[#h-1],h[#h],p)<=0 do table.remove(h) end
+        h[#h+1]=p
+    end
+    if #h>1 then table.remove(h) end
+    return h
+end
+function FX.partHull(e,part,vw,vh)
+    if not same(get(part.obj,"Parent"),e.model) then return nil end
+    local ok,m=pcall(function() return {part.obj.CFrame:GetComponents()} end)
+    if not ok or #m~=12 then FX.chamSkipped=FX.chamSkipped+1; return nil end
+    for i=1,12 do if not finite(m[i]) then FX.chamSkipped=FX.chamSkipped+1; return nil end end
+    local a=e.lastAnchor
+    if not a or math.max(math.abs(m[1]-a[1]),math.abs(m[2]-a[2]),math.abs(m[3]-a[3]))>cfg.MaxBodySpan then return nil end
+    local points={}; local size=part.size
+    for _,sx in ipairs({-.5,.5}) do for _,sy in ipairs({-.5,.5}) do for _,sz in ipairs({-.5,.5}) do
+        local x,y,z=size[1]*sx,size[2]*sy,size[3]*sz
+        local px,py=project(m[1]+m[4]*x+m[5]*y+m[6]*z,m[2]+m[7]*x+m[8]*y+m[9]*z,m[3]+m[10]*x+m[11]*y+m[12]*z)
+        -- Skip a clipped part rather than invent off-screen WorldToScreen values.
+        if not px or px<0 or py<0 or px>vw or py>vh then return nil end
+        points[#points+1]={px,py}
+    end end end
+    return FX.hull(points)
+end
+function FX.chams(slot,e,now,vw,vh,rank)
+    slot.chams=slot.chams or {}
+    if not cfg.Chams or FX.chamFault or rank>cfg.ChamsMaxTargets then
+        for _,obj in ipairs(slot.chams) do assign(obj,"Visible",false) end
+        slot.nextChams=0; return
+    end
+    -- Never reuse a previous model's polygon after slot assignment changes.
+    if slot.chamModel~=e.model then slot.nextChams=0; slot.chamModel=e.model end
+    if slot.nextChams and now<slot.nextChams then
+        for i,obj in ipairs(slot.chams) do assign(obj,"Visible",i<=(slot.chamCount or 0)) end
+        return
+    end
+    slot.nextChams=now+1/cfg.ChamsHz; FX.chamUpdates=FX.chamUpdates+1
+    local count=0
+    for _,part in ipairs(e.parts) do
+        local hull=FX.partHull(e,part,vw,vh)
+        if hull and #hull>=3 then
+            for i=2,#hull-1 do
+                count=count+1; local obj=slot.chams[count]
+                if not obj then
+                    obj=tryDrawing("Triangle",purple)
+                    if not obj then error("Drawing Triangle unavailable") end
+                    slot.chams[count]=obj; slot.objects[#slot.objects+1]=obj
+                    assign(obj,"Filled",true); pcall(assign,obj,"ZIndex",0)
+                end
+                vector2(obj,"PointA",hull[1][1],hull[1][2]); vector2(obj,"PointB",hull[i][1],hull[i][2]); vector2(obj,"PointC",hull[i+1][1],hull[i+1][2])
+                assign(obj,"Transparency",cfg.ChamsOpacity); assign(obj,"Visible",true)
+            end
+        end
+    end
+    slot.chamCount=count; FX.chamTriangles=FX.chamTriangles+count
+    for i=count+1,#slot.chams do assign(slot.chams[i],"Visible",false) end
+end
+function FX.report()
+    local rows={"-- NAMED SOUND CUES / DRAWING CHAMS --",
+        "Sound folder=Workspace.Debris.Sounds status="..str(FX.status).." enabled="..tostring(cfg.SoundESP).." interval="..cfg.SoundPollInterval,
+        string.format("Cue polls=%d candidateReads=%d baseline=%d emitted=%d active=%d visible=%d allyHidden=%d invalid/near/range=%d expired=%d markerDropped=%d limitedScans=%d errors=%d",FX.polls,FX.candidates,FX.baseline,FX.emitted,#FX.marks,FX.visible or 0,FX.allyHidden,FX.invalid,FX.expired,FX.dropped,FX.scanLimited,FX.errors),
+        "New cue Part identity observed; this is not verified playback, audibility, player identity or exact start time. Unknown team is shown as ?. Team suffix is an inference. Markers stay at their recorded source, never follow a body.",
+        "Sound limits: "..cfg.SoundScanCap.." children/poll, "..cfg.SoundMaxMarkers.." markers; no position-based suppression of repeated steps. Polling can miss very short cues.",
+        string.format("Chams enabled=%s opacity=%.2f targetHz=%g targetCap=%d updates=%d triangleDraws=%d unavailableParts=%d errors=%d",tostring(cfg.Chams),cfg.ChamsOpacity,cfg.ChamsHz,cfg.ChamsMaxTargets,FX.chamUpdates,FX.chamTriangles,FX.chamSkipped,FX.chamErrors),
+        "Chams are projected oriented part hulls over the same filtered body cache, not exact mesh silhouettes or visibility checks."}
+    if FX.soundFault then rows[#rows+1]="Sound marker fault="..FX.soundFault end
+    if FX.chamFault then rows[#rows+1]="Chams fault="..FX.chamFault end
+    for _,line in ipairs(FX.recent) do rows[#rows+1]="CUE "..line end
+    return rows
+end
+
+local function step(now)
+    controls(now); if not C.Running then return end
+    if now-lastRefresh>=cfg.CacheInterval then
+        lastRefresh=now; local before=clock(); stats.refreshes=stats.refreshes+1
+        local ok,err=pcall(refresh)
+        local cost=clock()-before; stats.cacheTotal=stats.cacheTotal+cost; stats.cacheMax=math.max(stats.cacheMax,cost)
+        if not ok then stats.cacheFailures=stats.cacheFailures+1; entries={}; stats.cached=0; C.State="waiting: "..str(err); hideAll() end
+    end
+    if not world then hideAll(); aimIdle("workspace unavailable"); return end
+    camera=get(world,"CurrentCamera")
+    local vw,vh=xy(get(camera,"ViewportSize")); local camPos=xyz(get(camera,"Position"))
+    if not vw or vw<=0 or vh<=0 or not camPos then C.State="waiting for camera"; hideAll(); aimIdle("camera unavailable"); return end
+    local soundOk,soundError=pcall(FX.sound,now,camPos)
+    if not soundOk then
+        FX.errors=FX.errors+1; FX.soundFault=str(soundError)
+        for _,slot in pairs(FX.pool) do for _,key in ipairs({"ring","label"}) do if slot[key] then pcall(assign,slot[key],"Visible",false) end end end
+    end
+    if not C.Enabled or not root then hideAll(); aimIdle("client disabled / body folder unavailable"); return end
+    C.Viewport={vw,vh}; C.State="tracking"; local visible=0
+    for i,e in ipairs(entries) do
+        local ok,b=pcall(geometry,e,camPos,vw,vh)
+        if ok and b then
+            local slot=slots[i]
+            if not slot then slot=newSlot(); slots[i]=slot end
+            if not slot.failed then
+                local drawn,err=pcall(renderSlot,slot,e,b,vw,vh)
+                if drawn then visible=visible+1
+                else slot.failed=true; stats.drawErrors=stats.drawErrors+1; event("Slot failed: "..str(err)); hideSlot(slot) end
+                if drawn then
+                    local chamOk,chamError=pcall(FX.chams,slot,e,now,vw,vh,visible)
+                    if not chamOk then
+                        FX.chamErrors=FX.chamErrors+1; FX.chamFault=str(chamError); cfg.Chams=false
+                        event("Chams disabled: "..str(chamError))
+                        for _,obj in ipairs(slot.chams or {}) do pcall(assign,obj,"Visible",false) end
+                    end
+                end
+                if drawn and not slot.extrasFailed then
+                    local extraOk,extraError=pcall(renderExtras,slot,e,now)
+                    if not extraOk then
+                        stats.drawErrors=stats.drawErrors+1; event("Extras disabled for this slot: "..str(extraError))
+                        slot.extrasFailed=true
+                        for _,line in pairs(slot.bones or {}) do pcall(assign,line,"Visible",false) end
+                        if slot.dot then pcall(assign,slot.dot,"Visible",false) end
+                    end
+                end
+            end
+        else
+            e.nextBones=0; e.boneScreen=nil
+            if slots[i] then slots[i].nextChams=0 end
+            if slots[i] then hideSlot(slots[i]) end
+            if not ok then e.state="geometry read error"; stats.stale=stats.stale+1 end
+        end
+    end
+    for i,slot in pairs(slots) do if i>#entries then hideSlot(slot) end end
+    stats.visible=visible; stats.maxVisible=math.max(stats.maxVisible,visible); stats.renders=stats.renders+1
+    aimStep(now,vw,vh)
+end
+local ok,err=pcall(function()
+    assert(finite(cfg.UpdateHz) and cfg.UpdateHz>=5 and cfg.UpdateHz<=120,"Invalid UpdateHz")
+    assert(finite(cfg.CacheInterval) and cfg.CacheInterval>=.05,"Invalid CacheInterval")
+    assert(finite(cfg.MaxTargets) and cfg.MaxTargets>=1 and cfg.MaxTargets<=256,"Invalid MaxTargets")
+    assert(finite(cfg.MaxDistance) and cfg.MaxDistance>=0,"Invalid MaxDistance")
+    assert(finite(cfg.SkeletonHz) and cfg.SkeletonHz>=5 and cfg.SkeletonHz<=120,"Invalid SkeletonHz")
+    assert(finite(cfg.HeadDotRadius) and cfg.HeadDotRadius>=1 and cfg.HeadDotRadius<=6,"Invalid head dot radius")
+    assert(finite(cfg.UnavailableDistance) and cfg.UnavailableDistance>=0,"Invalid unavailable-position threshold")
+    assert(finite(cfg.AimAcquireRadius) and cfg.AimAcquireRadius>0 and finite(cfg.AimTrackRadius) and cfg.AimTrackRadius>0,"Invalid aim radii")
+    assert(finite(cfg.AimSmoothTime) and cfg.AimSmoothTime>=.05 and finite(cfg.AimGain) and cfg.AimGain>0,"Invalid aim smoothing/gain")
+    assert(finite(cfg.AimMaxStep) and cfg.AimMaxStep>=1 and cfg.AimMaxStep<=20,"Invalid aim step")
+    assert(finite(cfg.AimMaxPixelsPerSecond) and cfg.AimMaxPixelsPerSecond>0,"Invalid aim speed")
+    assert(finite(cfg.AimDeadzone) and cfg.AimDeadzone>=0 and finite(cfg.AimMaxDistance) and cfg.AimMaxDistance>=0,"Invalid aim distance/deadzone")
+    assert(cfg.AimPoint=="Torso" or cfg.AimPoint=="Head" or cfg.AimPoint=="Chest","Invalid aim point")
+    assert(finite(cfg.LocalStateInterval) and cfg.LocalStateInterval>=.05,"Invalid state interval")
+    purple=Color3.fromRGB(170,112,240); gray=Color3.fromRGB(125,122,139)
+    pale=Color3.fromRGB(219,204,245); ink=Color3.fromRGB(230,226,238); background=Color3.fromRGB(24,23,31)
+    assert(Drawing and type(Drawing.new)=="function","Drawing.new unavailable")
+end)
+if not ok then C.State="startup error: "..str(err); print("KONTRA ENEMY ESP: "..C.State); removeAll(); return end
+C.Running=true
+print("KONTRA CLIENT 1.7 ready. RIGHT SHIFT opens the menu. Click VISUALS / AIM TEST / EFFECTS tabs. Feature toggles, reports and Stop are button-only. Aim starts OFF; default operating hold is RMB.")
+print("Aim has NO wall/visibility check. Hold mode waits for its first torso while held, then locks that body until release/loss. Optional Automatic mode needs no hold and can reacquire after loss. No firing is generated.")
+print("Enemies only ON: inferred from exact T/CT uniform names and your Team attribute. Unknown/conflicting uniforms hidden. Use menu Stop; ~ marks inferred team.")
+while C.Running do
+    if _G.KontraESP~=C then C.Stop("replaced"); break end
+    local begin=clock()
+    if cfg.Duration>0 and begin-started>=cfg.Duration then C.Stop("duration"); break end
+    local success,problem=pcall(step,begin)
+    if not C.Running then break end
+    if success and S.running then
+        local probeOk,probeError=pcall(S.tick,clock(),clock()-begin)
+        if not probeOk then S.running=false; S.state="failed"; S.fault=str(probeError); S.queue={} end
+    end
+    local cost=math.max(0,clock()-begin)
+    stats.frames=stats.frames+1; stats.updateTotal=stats.updateTotal+cost; stats.updateMax=math.max(stats.updateMax,cost)
+    if not success then stats.frameErrors=stats.frameErrors+1; event("Frame failed: "..str(problem)); hideAll(); aimIdle("frame error") end
+    if cfg.ReportInterval>0 and begin-lastReport>=cfg.ReportInterval then report(false); lastReport=begin end
+    local slept,sleepError=pcall(sleeper,math.max(.001,1/cfg.UpdateHz-cost))
+    if not slept then C.Stop("scheduler failure: "..str(sleepError)); break end
+end
