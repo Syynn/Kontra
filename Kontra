@@ -1,7 +1,8 @@
--- KONTRA CLIENT 1.7 / regular Matcha / complete standalone script
--- RIGHT SHIFT opens the panel. All feature toggles/actions use panel buttons.
+-- KONTRA CLIENT 1.9 / regular Matcha / complete standalone script
+-- RIGHT SHIFT: menu. Set your own ESP toggle key on SETTINGS (unbound by default).
 -- Menu-selectable held or automatic mouse aim test. No visibility check or firing.
 local CONFIG={
+    ESPEnabled=true, ESPToggleKey=0,
     Enabled=true, Boxes=true, Tracers=true, Labels=true, Distances=true, EnemiesOnly=true,
     Skeleton=true, HeadDot=true, HeadDotRadius=2, SkeletonHz=30, SkeletonThickness=1,
     UnavailableDistance=100000,
@@ -84,7 +85,7 @@ local S={running=cfg.SoundDiagnostic,state=cfg.SoundDiagnostic and "sampling" or
     pending=0}
 C.SoundProbe=S
 local FX={marks={},seen={},folder=nil,warm=false,nextScan=0,polls=0,candidates=0,emitted=0,
-    baseline=0,allyHidden=0,invalid=0,expired=0,dropped=0,scanLimited=0,errors=0,pool={},
+    baseline=0,allyHidden=0,unknownTeamHidden=0,localTeamHidden=0,teamRenderHidden=0,invalid=0,expired=0,dropped=0,scanLimited=0,errors=0,pool={},
     chamTriangles=0,chamUpdates=0,chamSkipped=0,chamErrors=0,chamFault=nil,recent={}}
 C.Effects=FX
 local stats={frames=0,renders=0,refreshes=0,cacheFailures=0,frameErrors=0,drawErrors=0,
@@ -251,7 +252,7 @@ function S.report()
 end
 local function report(copy)
     local elapsed=math.max(.001,(C.StoppedAt or clock())-started)
-    local rows={"========== KONTRA CLIENT 1.7 ==========",
+    local rows={"========== KONTRA CLIENT 1.9 ==========",
         "State="..C.State.." running="..tostring(C.Running).." enabled="..tostring(C.Enabled).." panel="..tostring(C.MenuOpen),
         string.format("Elapsed=%.2fs loops=%d draws=%d loops/sec=%.2f",elapsed,stats.frames,stats.renders,stats.frames/elapsed),
         string.format("Update ms avg/max=%.3f/%.3f cache ms avg/max=%.3f/%.3f",stats.updateTotal/math.max(1,stats.frames)*1000,stats.updateMax*1000,stats.cacheTotal/math.max(1,stats.refreshes)*1000,stats.cacheMax*1000),
@@ -294,6 +295,11 @@ local function report(copy)
     end
     for _,line in ipairs(S.report()) do rows[#rows+1]=line end
     if FX.report then for _,line in ipairs(FX.report()) do rows[#rows+1]=line end end
+    rows[#rows+1]="Aim setup="..tostring(C.Settings and C.Settings.preset or "Custom / defaults").."; Rifle/SMG/Balanced are manual presets, not automatic equipped-weapon profiles"
+    rows[#rows+1]="-- MENU / ESP BIND / SETTINGS --"
+    rows[#rows+1]="ESP overlays="..tostring(cfg.ESPEnabled).." toggleKey="..cfg.ESPToggleKey.." toggles="..(C.Settings and C.Settings.toggles or 0).." menuKey="..cfg.MenuKey.."; ESP key does not change aim enable"
+    if C.Settings then rows[#rows+1]="Settings path="..C.Settings.path.." saved/loaded="..tostring(C.Settings.saved).."/"..tostring(C.Settings.loaded).." status="..C.Settings.status end
+    rows[#rows+1]="Menu page="..A.page.." section="..tostring(ui.section).." scale="..tostring(ui.scale).."; saved settings load manually from SETTINGS"
     rows[#rows+1]="-- AIM GATES / ACQUISITION REJECTIONS --"
     for reason,count in pairs(A.gates) do rows[#rows+1]="GATE "..reason.." frames="..count end
     for reason,count in pairs(A.rejects) do rows[#rows+1]="REJECT "..reason.." tests="..count end
@@ -777,6 +783,7 @@ local function paintAim(vw,vh,target)
         assign(obj,"Radius",radius); vector2(obj,"Position",x,y); assign(obj,"Visible",true)
     end
     hideAim()
+    if not cfg.ESPEnabled then return end
     if cfg.AimShowFOV then
         ring("track",cfg.AimTrackRadius,vw/2,vh/2,gray)
         ring("acquire",math.min(cfg.AimAcquireRadius,cfg.AimTrackRadius),vw/2,vh/2,purple)
@@ -888,207 +895,299 @@ local function aimStep(now,vw,vh)
     end
     recordAimGate()
 end
-local visualRows={{"ESP enabled","Enabled"},{"Body boxes","Boxes"},{"Tracers","Tracers"},{"Body ID labels","Labels"},{"Distance labels","Distances"},{"Enemies only (uniforms)","EnemiesOnly"},{"Skeleton","Skeleton"},{"Head dot","HeadDot"},{"Head dot radius","radius"},{"Copy diagnostics","report"},{"Stop and remove client","quit"}}
-local aimRows={{"Aim test enabled","AimEnabled"},{"Hold key (click to bind)","bind"},{"Automatic aim (no hold)","AimAutomatic"},{"Preview only (no movement)","AimPreview"},{"Aim point","AimPoint"},{"Acquire radius","AimAcquireRadius"},{"Body-aware acquisition","AimBodyAcquire"},{"Tracking radius","AimTrackRadius"},{"Smooth time","AimSmoothTime"},{"Mouse gain","AimGain"},{"Max movement per call","AimMaxStep"},{"Show aim circles","AimShowFOV"},{"Copy diagnostics","report"},{"Stop and remove client","quit"}}
-local effectRows={{"Sound markers","SoundESP"},{"Footsteps / landings","SoundSteps"},{"Gunshots","SoundShots"},{"Other named cues","SoundOther"},{"Hide inferred allies","SoundHideAllies"},{"Sound range","SoundRange"},{"Marker lifetime","SoundLifetime"},{"Filled body chams","Chams"},{"Chams opacity","ChamsOpacity"},{"Copy diagnostics","report"},{"Stop and remove client","quit"}}
-local pages={visualRows,aimRows,effectRows}
-local menuRows=visualRows
-local choices={AimPoint={"Torso","Head","Chest"},AimAcquireRadius={20,35,50,75,100,125,160},AimTrackRadius={60,90,120,160,200,250},AimSmoothTime={.12,.22,.30,.40},AimGain={.25,.5,.65,1,1.5},AimMaxStep={1,2,3,4,6}}
-local function keyName(key)
-    local names={[1]="LMB",[2]="RMB",[4]="MMB",[5]="Mouse4",[6]="Mouse5",[16]="Shift",[17]="Ctrl",[18]="Alt",[32]="Space"}
-    return names[key] or ((key>=48 and key<=90) and string.char(key) or ("VK "..key))
+-- Separate pages keep switches, aim tuning and saved settings easy to find.
+local U={path="kontra/client_settings.json",status="Settings have not been loaded",schema={},toggles=0}
+C.Settings=U
+for _,key in ipairs({"Enabled","ESPEnabled","Boxes","Tracers","Labels","Distances","EnemiesOnly","Skeleton","HeadDot","Chams",
+    "SoundESP","SoundSteps","SoundShots","SoundOther","SoundHideAllies","AimEnabled","AimAutomatic","AimPreview","AimBodyAcquire","AimShowFOV","AimInvertX","AimInvertY"}) do U.schema[key]={kind="boolean"} end
+for key,range in pairs({HeadDotRadius={1,3,1},ChamsOpacity={.05,.8},SoundRange={50,2500},SoundLifetime={.5,4},
+    AimAcquireRadius={20,160},AimTrackRadius={60,250},AimSmoothTime={.05,.4},AimGain={.25,1.5},AimMaxStep={1,12,1},
+    AimMaxPixelsPerSecond={1,1000},AimDeadzone={0,20},AimMaxDistance={0,10000}}) do U.schema[key]={kind="number",min=range[1],max=range[2],integer=range[3]==1} end
+U.schema.AimPoint={kind="point"};U.schema.AimHoldKey={kind="bind"};U.schema.ESPToggleKey={kind="bind"}
+function U.notice(message)
+    U.status=message;ui.notice=message;ui.dirty=true
 end
-local function toggleRow(row)
-    local key=menuRows[row][2]
-    if key=="Enabled" then C.Enabled=not C.Enabled
-    elseif key=="report" then report(true)
-    elseif key=="quit" then C.Stop("menu stop"); return
-    elseif key=="radius" then cfg.HeadDotRadius=cfg.HeadDotRadius%3+1
-    elseif key=="bind" then A.capture=true; A.captureReleased=false; resetAim("waiting for new hold key")
-    elseif choices[key] then
-        local list=choices[key]; local index=0
-        for i,value in ipairs(list) do if value==cfg[key] then index=i; break end end
-        cfg[key]=list[index%#list+1]; resetAim("aim setting changed; release hold key")
-    else cfg[key]=not cfg[key] end
-    if key=="AimEnabled" or key=="AimPreview" or key=="AimAutomatic" then resetAim("aim mode changed") end
-    ui.dirty=true
-end
-local function uiObject(index,kind,color)
-    local obj=ui.objects[index]
-    if not obj then obj=tryDrawing(kind,color); ui.objects[index]=obj
-        if obj then pcall(assign,obj,"ZIndex",kind=="Text" and 102 or (index==1 and 100 or 101)) end
+function U.valid(values)
+    if type(values)~="table" then return false,"Settings must be an object" end
+    for key,value in pairs(values) do
+        local spec=U.schema[key]
+        if not spec then return false,"Unknown setting: "..str(key,45) end
+        if spec.kind=="boolean" and type(value)~="boolean" then return false,"Invalid switch: "..key end
+        if spec.kind=="number" and (not finite(value) or value<spec.min or value>spec.max or (spec.integer and value~=math.floor(value))) then return false,"Invalid value: "..key end
+        if spec.kind=="point" and value~="Torso" and value~="Head" and value~="Chest" then return false,"Invalid aim point" end
+        if spec.kind=="bind" and not (key=="ESPToggleKey" and value==0) and (not finite(value) or value~=math.floor(value) or value<2 or value>254 or value==cfg.MenuKey or value==27) then return false,"Invalid key: "..key end
     end
-    return obj
+    if (values.AimHoldKey or cfg.AimHoldKey)==(values.ESPToggleKey or cfg.ESPToggleKey) then return false,"Aim and ESP keys must be different" end
+    return true
 end
--- Every numeric control has its own unit, bounds and fine increment.
+function U.setESP(enabled)
+    cfg.ESPEnabled=enabled;U.toggles=U.toggles+1;ui.dirty=true
+    if not enabled then hideAll();hideAim();FX.marks={} end
+    event("ESP overlays "..(enabled and "ON" or "OFF"))
+end
+function C.SaveSettings()
+    local values={};for key in pairs(U.schema) do values[key]=key=="Enabled" and C.Enabled or cfg[key] end
+    -- Enabled=false must remain false; avoid a boolean fallback to cfg.Enabled.
+    values.Enabled=C.Enabled
+    local valid,why=U.valid(values);if not valid then U.notice(why);return false end
+    if type(writefile)~="function" or type(readfile)~="function" then U.notice("Settings file API unavailable");return false end
+    local ok,err=pcall(function()
+        local http=game:GetService("HttpService")
+        local raw=http:JSONEncode({Version=1,Game="Kontra",Settings=values})
+        assert(type(raw)=="string" and #raw>0 and #raw<=65536,"invalid encoded settings")
+        assert(writefile(U.path,raw)~=false,"write rejected")
+        assert(readfile(U.path)==raw,"settings readback failed")
+    end)
+    U.saved=ok;U.notice(ok and "Settings saved" or ("Save failed: "..str(err,55)));return ok
+end
+function C.LoadSettings()
+    if type(readfile)~="function" then U.notice("Settings file API unavailable");return false end
+    local ok,values=pcall(function()
+        local raw=readfile(U.path);assert(type(raw)=="string" and #raw<=65536,"settings file too large")
+        local data=game:GetService("HttpService"):JSONDecode(raw)
+        assert(type(data)=="table" and data.Version==1 and data.Game=="Kontra","unsupported settings file")
+        local valid,why=U.valid(data.Settings);assert(valid,why)
+        return data.Settings
+    end)
+    if not ok then U.loaded=false;U.notice("Load failed: "..str(values,55));return false end
+    for key,value in pairs(values) do cfg[key]=value end
+    if values.Enabled~=nil then C.Enabled=values.Enabled end
+    U.loaded=true;A.capture=false;ui.slider=nil;ui.espReady=false;ui.espWasDown=true
+    hideAll();hideAim();FX.marks={};resetAim("settings loaded; release aim key")
+    U.preset="Loaded settings";U.notice("Settings loaded");return true
+end
+local aimPresets={
+    Rifle={AimAcquireRadius=100,AimTrackRadius=155,AimSmoothTime=.08,AimGain=1.15,AimMaxStep=8,AimMaxPixelsPerSecond=420,AimDeadzone=.75},
+    SMG={AimAcquireRadius=115,AimTrackRadius=180,AimSmoothTime=.07,AimGain=1.25,AimMaxStep=9,AimMaxPixelsPerSecond=480,AimDeadzone=.75},
+    Balanced={AimAcquireRadius=75,AimTrackRadius=120,AimSmoothTime=.18,AimGain=.8,AimMaxStep=4,AimMaxPixelsPerSecond=180,AimDeadzone=1.5},
+}
+function C.ApplyAimPreset(name)
+    local preset=aimPresets[name];if not preset then return false end
+    for key,value in pairs(preset) do cfg[key]=value end
+    U.preset=name;resetAim("aim preset applied; release aim key")
+    U.notice(name.." settings applied. Save settings to keep them.");return true
+end
+local presetRows={{"Rifles: responsive","presetRifle"},{"SMGs: fast tracking","presetSMG"},{"Balanced: gentler tracking","presetBalanced"}}
+local visualRows={{"ESP overlays","ESPEnabled"},{"Boxes","Boxes"},{"Skeleton","Skeleton"},{"Head dot","HeadDot"},{"Filled chams","Chams"},{"Tracers","Tracers"},{"Enemies only","EnemiesOnly"}}
+local detailRows={{"Body ID labels","Labels"},{"Distance labels","Distances"},{"Head dot size","radius"},{"Chams opacity","ChamsOpacity"}}
+local aimRows={{"Aim assist","AimEnabled"},{"Aim hold key","bind"},{"Automatic aim","AimAutomatic"},{"Target point","AimPoint"},{"Acquire from body","AimBodyAcquire"},{"Preview only","AimPreview"},{"FOV circles","AimShowFOV"}}
+local tuningRows={{"Acquire radius","AimAcquireRadius"},{"Tracking radius","AimTrackRadius"},{"Smooth time","AimSmoothTime"},{"Tracking strength","AimGain"},{"Maximum aim step","AimMaxStep"},{"Aim movement speed","AimMaxPixelsPerSecond"}}
+local soundRows={{"Sound markers","SoundESP"},{"Footsteps and landings","SoundSteps"},{"Gunshots","SoundShots"},{"Other sound cues","SoundOther"},{"Sound team check","SoundHideAllies"},{"Marker range","SoundRange"},{"Marker lifetime","SoundLifetime"}}
+local settingRows={{"ESP toggle key","espBind"},{"Aim hold key","bind"},{"Client enabled","Enabled"},{"Save settings","save"},{"Load settings","load"}}
+local pages={visualRows,aimRows,soundRows,settingRows}
+local menuRows=visualRows
+ui.section=1;ui.espReady=false;ui.espWasDown=false;ui.tabs={};ui.footer={}
 local sliderSpecs={
     radius={key="HeadDotRadius",min=1,max=3,step=1,format="%.0f px"},
     AimAcquireRadius={min=20,max=160,step=1,format="%.0f px"},
     AimTrackRadius={min=60,max=250,step=1,format="%.0f px"},
-    AimSmoothTime={min=.12,max=.40,step=.01,format="%.2f s"},
+    AimSmoothTime={min=.05,max=.40,step=.01,format="%.2f s"},
     AimGain={min=.25,max=1.5,step=.05,format="%.2fx"},
-    AimMaxStep={min=1,max=6,step=1,format="%.0f px"},
+    AimMaxStep={min=1,max=12,step=1,format="%.0f units"},
+    AimMaxPixelsPerSecond={min=40,max=600,step=10,format="%.0f units/s"},
     SoundRange={min=50,max=2500,step=10,format="%.0f studs"},
     SoundLifetime={min=.5,max=4,step=.1,format="%.1f s"},
     ChamsOpacity={min=.05,max=.80,step=.05,format="%.0f%%",percent=true},
 }
-local function sliderText(spec,value)
-    return string.format(spec.format,spec.percent and value*100 or value)
+local function keyName(key)
+    local names={[0]="Not set",[1]="LMB",[2]="RMB",[4]="MMB",[5]="Mouse 4",[6]="Mouse 5",[16]="Shift",[17]="Ctrl",[18]="Alt",[32]="Space",[45]="Insert",[46]="Delete",[36]="Home",[35]="End",[0xA0]="Left Shift",[0xA1]="Right Shift"}
+    if key>=112 and key<=135 then return "F"..(key-111) end
+    return names[key] or ((key>=48 and key<=90) and string.char(key) or ("VK "..key))
+end
+local function selectPage(page,section)
+    A.page=page;ui.section=section or 1;ui.slider=nil;ui.layout={}
+    menuRows=(page==1 and ui.section==2 and detailRows) or (page==2 and ui.section==2 and tuningRows) or (page==2 and ui.section==3 and presetRows) or pages[page]
+    ui.dirty=true
+end
+local function toggleRow(row)
+    local key=menuRows[row][2]
+    if key=="ESPEnabled" then U.setESP(not cfg.ESPEnabled)
+    elseif key=="Enabled" then C.Enabled=not C.Enabled;cfg.Enabled=C.Enabled;hideAll();hideAim();resetAim("client enable changed")
+    elseif key:sub(1,6)=="preset" then C.ApplyAimPreset(key:sub(7))
+    elseif key=="save" then C.SaveSettings()
+    elseif key=="load" then C.LoadSettings()
+    elseif key=="bind" or key=="espBind" then
+        A.capture=true;A.captureKey=key=="espBind" and "ESPToggleKey" or "AimHoldKey";A.captureReleased=false
+        ui.notice="Release all keys, then press a key. Esc cancels.";resetAim("waiting for a new key")
+    elseif key=="AimPoint" then
+        local nextPoint={Torso="Head",Head="Chest",Chest="Torso"};cfg.AimPoint=nextPoint[cfg.AimPoint];resetAim("aim point changed")
+    else cfg[key]=not cfg[key] end
+    if key=="AimEnabled" or key=="AimPreview" or key=="AimAutomatic" then resetAim("aim mode changed") end
+    ui.dirty=true
 end
 local function setSlider(row,value)
-    local name=menuRows[row][2]; local spec=sliderSpecs[name]; if not spec then return end
+    local name=menuRows[row][2];local spec=sliderSpecs[name];if not spec then return end
     local key=spec.key or name
     value=clamp(spec.min+math.floor((value-spec.min)/spec.step+.5)*spec.step,spec.min,spec.max)
     if math.abs(cfg[key]-value)>.000001 then
-        cfg[key]=value; ui.dirty=true
-        if name:sub(1,3)=="Aim" then resetAim("aim setting changed; release hold key") end
+        cfg[key]=value;ui.dirty=true
+        if name:sub(1,3)=="Aim" then U.preset="Custom";resetAim("aim setting changed; release key") end
     end
 end
+local function sliderText(spec,value) return string.format(spec.format,spec.percent and value*100 or value) end
 local function paintPanel()
-    if not C.MenuOpen then for _,obj in pairs(ui.objects) do pcall(assign,obj,"Visible",false) end; return end
+    if not C.MenuOpen then for _,obj in pairs(ui.objects) do pcall(assign,obj,"Visible",false) end;return end
     if not features.text then return end
-    local total=0; ui.layout={}
-    for i,row in ipairs(menuRows) do
-        local h=sliderSpecs[row[2]] and 54 or 30
-        ui.layout[i]={top=ui.y+43+total,height=h,left=ui.x+30,right=ui.x+ui.w-78}
-        total=total+h
-    end
-    ui.h=106+total
-    for row=#menuRows+1,14 do
-        for _,index in ipairs({100+row,200+row,row+2}) do
-            if ui.objects[index] then assign(ui.objects[index],"Visible",false) end
-        end
-    end
-    local used={}
-    local function rectangle(index,x,y,w,h,color)
-        local obj=uiObject(index,"Square",color)
-        if obj then assign(obj,"Filled",true); assign(obj,"Color",color); vector2(obj,"Position",x,y); vector2(obj,"Size",w,h); assign(obj,"Visible",true) end
+    local vw=C.Viewport and C.Viewport[1] or 800;local vh=C.Viewport and C.Viewport[2] or 600
+    local scale=math.min(1,(vw-24)/560,(vh-24)/560);scale=math.max(.3,scale)
+    ui.scale=scale;ui.w=560*scale;ui.h=560*scale;ui.vw=vw;ui.vh=vh
+    ui.x=clamp(ui.x,8,math.max(8,vw-ui.w-8));ui.y=clamp(ui.y,8,math.max(8,vh-ui.h-8))
+    local used={};ui.layout={};ui.tabs={};ui.sections={}
+    local panel=Color3.fromRGB(29,28,39);local card=Color3.fromRGB(35,33,46);local muted=Color3.fromRGB(158,151,174)
+    local function object(index,kind)
+        used[index]=true;local obj=ui.objects[index]
+        if not obj then obj=tryDrawing(kind,ink);ui.objects[index]=obj end
+        if obj then pcall(assign,obj,"ZIndex",kind=="Text" and 102 or (index==1 and 100 or 101)) end
         return obj
     end
-    local function label(index,text,x,y,color,small)
-        local obj=uiObject(index,"Text",color)
-        if obj then
-            assign(obj,"Text",text); assign(obj,"Color",color); vector2(obj,"Position",x,y)
-            if small then pcall(assign,obj,"Size",11) end
-            assign(obj,"Visible",true)
+    local function rect(index,x,y,w,h,color)
+        if not features.square then return end
+        local obj=object(index,"Square");if not obj then return end
+        assign(obj,"Color",color);assign(obj,"Filled",true);vector2(obj,"Position",ui.x+x*scale,ui.y+y*scale);vector2(obj,"Size",w*scale,h*scale);assign(obj,"Visible",true)
+    end
+    local function label(index,text,x,y,color,size)
+        local obj=object(index,"Text");if not obj then return end
+        assign(obj,"Text",text);assign(obj,"Color",color);pcall(assign,obj,"Size",math.max(10,(size or 14)*scale))
+        vector2(obj,"Position",ui.x+x*scale,ui.y+y*scale);assign(obj,"Visible",true)
+    end
+    local function hit(x,y,w,h) return {left=ui.x+x*scale,top=ui.y+y*scale,right=ui.x+(x+w)*scale,bottom=ui.y+(y+h)*scale} end
+    rect(1,0,0,560,560,background);rect(2,0,0,560,3,purple);rect(3,0,3,560,48,panel)
+    label(10,"KONTRA",20,15,ink,18);label(11,"1.9",110,20,muted,12)
+    label(12,"ESP "..(cfg.ESPEnabled and "ON" or "OFF").."  |  AIM "..(cfg.AimEnabled and "ON" or "OFF"),300,20,pale,12)
+    label(13,"X",529,17,ink,16);ui.close=hit(516,7,36,36);ui.header=hit(0,3,510,48)
+    for page,title in ipairs({"VISUALS","AIM","SOUNDS","SETTINGS"}) do
+        local x=16+(page-1)*133
+        rect(40+page,x,62,129,30,A.page==page and purple or panel);label(50+page,title,x+18,69,ink,13)
+        ui.tabs[page]=hit(x,62,129,30)
+    end
+    if A.page==1 or A.page==2 then
+        local names=A.page==1 and {"Overlays","Labels & detail"} or {"Controls","Tuning","Presets"}
+        for section=1,#names do
+            local x=20+(section-1)*(A.page==2 and 174 or 188);label(60+section,names[section],x+8,110,ui.section==section and pale or muted,14)
+            if ui.section==section then rect(70+section,x,132,A.page==2 and 164 or 174,2,purple) end
+            ui.sections[section]=hit(x,102,A.page==2 and 170 or 180,32)
         end
+    else
+        label(63,A.page==3 and "Sound markers" or "Keys and saved settings",22,110,pale,15)
     end
-    if features.square then
-        rectangle(1,ui.x,ui.y,ui.w,ui.h,background)
-        rectangle(2,ui.x,ui.y,ui.w,3,purple)
-    end
-    label(100,"KONTRA 1.7",ui.x+12,ui.y+12,ink)
-    for page=1,3 do
-        local x=ui.x+146+(page-1)*88
-        if features.square then rectangle(19+page,x,ui.y+8,86,24,A.page==page and purple or background) end
-        label(149+page,({"VISUALS","AIM TEST","EFFECTS"})[page],x+5,ui.y+12,ink)
-    end
+    local y=144
     for i,row in ipairs(menuRows) do
-        local y=ui.layout[i].top; local name=row[2]; local spec=sliderSpecs[name]
-        local active=name=="Enabled" and C.Enabled or (name~="Enabled" and cfg[name])
-        label(100+i,(ui.row==i and "> " or "  ")..row[1],ui.x+12,y,ink)
-        local value=active and "ON" or "OFF"
-        if name=="report" then value="COPY"
-        elseif name=="quit" then value="STOP"
-        elseif name=="bind" then value=A.capture and "PRESS KEY" or keyName(cfg.AimHoldKey)
-        elseif spec then value=sliderText(spec,cfg[spec.key or name])
-        elseif choices[name] then value=tostring(cfg[name]) end
-        label(200+i,value,ui.x+275,y,pale)
-        local indicator=ui.objects[i+2]
-        if not indicator and features.square then indicator=uiObject(i+2,"Square",gray) end
-        if indicator then
-            assign(indicator,"Color",active and purple or gray); assign(indicator,"Filled",true)
-            vector2(indicator,"Position",ui.x+252,y+4); vector2(indicator,"Size",12,12)
-            assign(indicator,"Visible",not spec and (type(cfg[name])=="boolean" or name=="Enabled"))
-        end
+        local name=row[2];local spec=sliderSpecs[name];local height=spec and 54 or 38
+        local r=hit(20,y,520,height-4);r.height=height*scale;r.key=name
+        r.trackLeft=ui.x+32*scale;r.trackRight=ui.x+456*scale;r.trackTop=ui.y+(y+29)*scale;r.trackBottom=ui.y+(y+47)*scale
+        r.minus=hit(471,y+4,28,24);r.plus=hit(505,y+4,28,24);ui.layout[i]=r
+        rect(20+i,20,y,520,height-4,card);label(100+i,row[1],30,y+8,ink,14)
+        local active=name=="Enabled" and C.Enabled or cfg[name]
+        if name=="Enabled" then active=C.Enabled end
         if spec then
-            local base=1000+i*10; local r=ui.layout[i]; local width=r.right-r.left
-            local ratio=clamp((cfg[spec.key or name]-spec.min)/(spec.max-spec.min),0,1)
-            if features.square then
-                rectangle(base,r.left,y+27,width,5,gray)
-                rectangle(base+1,r.left,y+27,math.max(1,width*ratio),5,purple)
-                rectangle(base+2,r.left+width*ratio-4,y+23,8,13,pale)
-                for n=0,2 do used[base+n]=true; ui.sliderIDs[base+n]=true end
+            local value=cfg[spec.key or name];local ratio=clamp((value-spec.min)/(spec.max-spec.min),0,1);local base=1000+i*10
+            label(200+i,sliderText(spec,value),362,y+8,pale,14)
+            rect(base,32,y+31,424,4,gray);rect(base+1,32,y+31,math.max(1,424*ratio),4,purple);rect(base+2,28+424*ratio,y+27,8,12,pale)
+            label(base+3,sliderText(spec,spec.min),32,y+40,muted,10);label(base+4,sliderText(spec,spec.max),402,y+40,muted,10)
+            rect(base+5,471,y+4,28,24,panel);rect(base+6,505,y+4,28,24,panel);label(base+7,"-",481,y+6,ink,16);label(base+8,"+",514,y+6,ink,16)
+        elseif name=="bind" or name=="espBind" then
+            local key=name=="bind" and "AimHoldKey" or "ESPToggleKey"
+            label(200+i,A.capture and A.captureKey==key and "PRESS KEY..." or keyName(cfg[key]),name=="espBind" and 340 or 390,y+8,pale,14)
+            if name=="espBind" then
+                rect(400+i,478,y+6,52,22,panel);label(420+i,"Clear",486,y+9,muted,12);r.clear=hit(478,y+6,52,22)
             end
-            label(base+3,sliderText(spec,spec.min),r.left,y+35,gray,true)
-            label(base+4,sliderText(spec,spec.max),r.right-55,y+35,gray,true)
-            label(base+5,"-",ui.x+ui.w-49,y,ink)
-            label(base+6,"+",ui.x+ui.w-24,y,ink)
-            for n=3,6 do used[base+n]=true; ui.sliderIDs[base+n]=true end
+        elseif name=="AimPoint" then label(200+i,cfg.AimPoint.."  >",414,y+8,pale,14)
+        elseif name:sub(1,6)=="preset" then label(200+i,"APPLY  >",430,y+8,pale,14)
+        elseif name=="save" or name=="load" then label(200+i,name=="save" and "SAVE  >" or "LOAD  >",430,y+8,pale,14)
+        else
+            label(200+i,active and "ON" or "OFF",421,y+8,active and pale or muted,12)
+            rect(300+i,478,y+9,42,17,active and purple or gray);rect(330+i,active and 503 or 481,y+12,13,11,ink)
         end
+        y=y+height
     end
-    for index in pairs(ui.sliderIDs) do if not used[index] and ui.objects[index] then assign(ui.objects[index],"Visible",false) end end
-    local footer=50+total
-    label(300,A.page==1 and ("Team: "..(C.LocalTeam or "UNKNOWN").." | ~ uniform") or (A.page==2 and "NO WALL CHECK: choose a visible body" or "Sound cue positions; ownership may be unknown"),ui.x+12,ui.y+footer,gray)
-    label(301,"Drag tracks | - / + fine steps | values shown above",ui.x+12,ui.y+footer+19,gray)
-    label(302,"RIGHT SHIFT opens / closes this menu",ui.x+12,ui.y+footer+37,gray)
+    local hints={"ESP key hides overlays; aim settings stay active.","Hold mode uses the aim key. Automatic needs no key.","Team check hides allied and unknown footsteps.","Save writes this setup. Load restores the saved setup."}
+    local hint=A.page==2 and ui.section==2 and "Smaller smooth time reacts faster. Drag or use - / +." or (A.page==2 and ui.section==3 and "One click applies tuning. Select Rifle or SMG manually.") or hints[A.page]
+    label(90,hint,22,472,muted,12)
+    label(91,str(ui.notice or U.status,68),22,491,pale,12)
+    rect(80,20,518,208,28,panel);label(81,"COPY DIAGNOSTICS",34,525,ink,12)
+    rect(82,240,518,128,28,panel);label(83,"STOP CLIENT",254,525,Color3.fromRGB(233,146,162),12)
+    label(84,cfg.ESPToggleKey==0 and "ESP key: not set" or (keyName(cfg.ESPToggleKey)..": ESP"),389,521,pale,11);label(85,"Right Shift: menu",389,537,muted,11)
+    ui.footer={report=hit(20,518,208,28),stop=hit(240,518,128,28)}
+    for index,obj in pairs(ui.objects) do if not used[index] then pcall(assign,obj,"Visible",false) end end
     ui.dirty=false
 end
+local function inside(r,x,y) return r and x>=r.left and x<=r.right and y>=r.top and y<=r.bottom end
 local function controls(now)
-    local focused=true
-    if type(isrbxactive)=="function" then local ok,value=pcall(isrbxactive); focused=ok and value==true end
-    C.FocusAvailable=type(isrbxactive)=="function"; C.Focused=C.FocusAvailable and focused
-    -- Right Shift only changes menu visibility. No feature-toggle hotkeys.
+    local good,focused=pcall(isrbxactive);focused=good and focused==true
+    C.FocusAvailable=type(isrbxactive)=="function";C.Focused=focused
     local menu=edge(cfg.MenuKey)
-    if focused then
-        if menu then C.MenuOpen=not C.MenuOpen; ui.dirty=true end
-    end
+    if menu and focused then C.MenuOpen=not C.MenuOpen;ui.dirty=true end
+    local valid,espDown=false,false
+    if cfg.ESPToggleKey~=0 then valid,espDown=pcall(iskeypressed,cfg.ESPToggleKey) end
+    espDown=valid and espDown==true
+    if not focused or A.capture or not valid then ui.espReady=false
+    elseif not espDown then ui.espReady=true
+    elseif not ui.espWasDown and ui.espReady then U.setESP(not cfg.ESPEnabled) end
+    ui.espWasDown=espDown
     if A.capture and focused and C.MenuOpen then
-        local reserved={[cfg.MenuKey]=true}
         local pressedKey
-        for code=1,254 do
-            local ok,value=pcall(iskeypressed,code)
-            if ok and value==true then pressedKey=code; break end
-        end
+        for code=1,254 do local ok,down=pcall(iskeypressed,code);if ok and down==true then pressedKey=code;break end end
         if not pressedKey then A.captureReleased=true
-        elseif pressedKey==0x1B then A.capture=false; ui.dirty=true
-        elseif A.captureReleased and not reserved[pressedKey] then
-            cfg.AimHoldKey=pressedKey; A.capture=false; resetAim("hold key rebound; release it first"); ui.dirty=true
-        end
-    elseif A.capture and not C.MenuOpen then A.capture=false end
-    if C.MenuOpen and focused then
-        if now>=ui.nextMouse then
-            ui.nextMouse=now+.5
-            local ok,value=pcall(function() return game:GetService("Players").LocalPlayer:GetMouse() end)
-            if ok then ui.mouse=value end
-        end
-        local x,y=get(ui.mouse,"X"),get(ui.mouse,"Y")
-        local ok,pressed=pcall(iskeypressed,1)
-        local mouseDown=ok and pressed==true
-        if type(ismouse1pressed)=="function" then local good,value=pcall(ismouse1pressed); if good and value then mouseDown=true end end
-        if not mouseDown then ui.slider=nil end
-        if not A.capture and mouseDown and not ui.wasDown and finite(x) and finite(y) and x>=ui.x and x<=ui.x+ui.w then
-            if y>=ui.y+8 and y<=ui.y+32 and x>=ui.x+146 and x<ui.x+410 then
-                A.page=math.floor((x-ui.x-146)/88)+1; menuRows=pages[A.page]; ui.row=1; ui.slider=nil; ui.dirty=true
+        elseif pressedKey==27 then A.capture=false;ui.notice="Key change cancelled";ui.dirty=true
+        elseif A.captureReleased then
+            local other=A.captureKey=="ESPToggleKey" and cfg.AimHoldKey or cfg.ESPToggleKey
+            if pressedKey==1 or pressedKey==cfg.MenuKey or pressedKey==other then
+                ui.notice="That key is already used or reserved. Choose another.";A.captureReleased=false;ui.dirty=true
             else
-                for row,r in ipairs(ui.layout) do
-                    if y>=r.top-3 and y<r.top+r.height-3 then
-                        ui.row=row; local name=menuRows[row][2]; local spec=sliderSpecs[name]
-                        if spec then
-                            if x>=ui.x+ui.w-60 and y<r.top+20 then
-                                setSlider(row,cfg[spec.key or name]+(x<ui.x+ui.w-32 and -1 or 1)*spec.step)
-                            elseif y>=r.top+19 and y<=r.top+37 then ui.slider=row end
-                        else toggleRow(row) end
-                        break
-                    end
-                end
+                cfg[A.captureKey]=pressedKey;A.capture=false;ui.espReady=false;ui.espWasDown=true
+                ui.notice="Key set to "..keyName(pressedKey);ui.dirty=true;resetAim("key rebound; release it first")
             end
         end
-        if ui.slider and mouseDown and not A.capture and finite(x) then
-            local r=ui.layout[ui.slider]; local spec=sliderSpecs[menuRows[ui.slider][2]]
-            setSlider(ui.slider,spec.min+clamp((x-r.left)/(r.right-r.left),0,1)*(spec.max-spec.min))
+    elseif A.capture and (not C.MenuOpen or not focused) then A.capture=false;ui.notice="Key change cancelled";ui.dirty=true end
+    if not C.MenuOpen or not focused then ui.slider=nil;ui.drag=nil;ui.wasDown=false end
+    if C.MenuOpen and focused then
+        if now>=ui.nextMouse then
+            ui.nextMouse=now+.5;local ok,mouse=pcall(function() return game:GetService("Players").LocalPlayer:GetMouse() end);if ok then ui.mouse=mouse end
         end
-        if not C.Running then return end
-        ui.wasDown=mouseDown
-    else ui.wasDown=false; ui.slider=nil end
+        local x,y=get(ui.mouse,"X"),get(ui.mouse,"Y");local ok,down=pcall(iskeypressed,1);down=ok and down==true
+        if type(ismouse1pressed)=="function" then local yes,value=pcall(ismouse1pressed);if yes and value==true then down=true end end
+        if not down then ui.slider=nil;ui.drag=nil end
+        if down and not ui.wasDown and not A.capture and finite(x) and finite(y) then
+            if inside(ui.close,x,y) then C.MenuOpen=false;ui.dirty=true
+            elseif inside(ui.footer.report,x,y) then report(true);ui.notice=C.ReportCopied and "Diagnostics copied" or "Report generated";ui.dirty=true
+            elseif inside(ui.footer.stop,x,y) then C.Stop("menu stop");return
+            elseif inside(ui.header,x,y) then ui.drag={x=x-ui.x,y=y-ui.y}
+            else
+                local acted=false
+                for page,r in ipairs(ui.tabs) do if inside(r,x,y) then selectPage(page);acted=true;break end end
+                if not acted then for section,r in ipairs(ui.sections or {}) do if inside(r,x,y) then selectPage(A.page,section);acted=true;break end end end
+                if not acted then for row,r in ipairs(ui.layout) do if inside(r,x,y) then
+                    local spec=sliderSpecs[menuRows[row][2]]
+                    if spec then
+                        if inside(r.minus,x,y) then setSlider(row,cfg[spec.key or menuRows[row][2]]-spec.step)
+                        elseif inside(r.plus,x,y) then setSlider(row,cfg[spec.key or menuRows[row][2]]+spec.step)
+                        elseif y>=r.trackTop and y<=r.trackBottom then ui.slider=row end
+                    elseif menuRows[row][2]=="espBind" and inside(r.clear,x,y) then
+                        cfg.ESPToggleKey=0;ui.espReady=false;ui.notice="ESP key cleared. Click Not set to choose a new key.";ui.dirty=true
+                    else toggleRow(row) end
+                    break
+                end end end
+            end
+        end
+        if ui.drag and down and finite(x) and finite(y) then
+            ui.x=clamp(x-ui.drag.x,8,math.max(8,(ui.vw or 800)-ui.w-8));ui.y=clamp(y-ui.drag.y,8,math.max(8,(ui.vh or 600)-ui.h-8));ui.dirty=true
+        end
+        if ui.slider and down and not A.capture and finite(x) then
+            local r=ui.layout[ui.slider];local spec=r and sliderSpecs[menuRows[ui.slider][2]]
+            if spec then setSlider(ui.slider,spec.min+clamp((x-r.trackLeft)/(r.trackRight-r.trackLeft),0,1)*(spec.max-spec.min)) end
+        end
+        ui.wasDown=down
+    end
+    if C.MenuOpen and C.Viewport and (ui.vw~=C.Viewport[1] or ui.vh~=C.Viewport[2]) then ui.dirty=true end
     if ui.dirty then
         local ok,err=pcall(paintPanel)
-        if not ok then event("Panel failed: "..tostring(err)); C.MenuOpen=false
+        if not ok then event("Panel failed: "..str(err));C.MenuOpen=false;A.capture=false
             for _,obj in pairs(ui.objects) do pcall(assign,obj,"Visible",false) end
             ui.dirty=false
         end
     end
 end
+
 function S.enqueue(obj,parentPath,depth)
     if not obj or S.enqueued>=cfg.SoundProbeNodeCap then
         if obj then S.coverage["discovery node/queue cap reached"]=true end
@@ -1234,6 +1333,107 @@ function FX.cueTeam(name,kind)
     if name:sub(-2)=="Ct" or name:sub(-2)=="CT" then return "CT" end
     if name:sub(-1)=="T" then return "T" end
 end
+-- Footstep asset suffixes are not ownership: the live capture used ConcreteCt
+-- for both sides. Associate a cue only with current nearby body geometry.
+FX.foot={snapshots=0,reads=0,matches=0,unknown=0,ambiguous=0,allyVeto=0,suffixConflicts=0,incomplete=0,work=0,maxWork=0,recent={}}
+function FX.footSnapshot(now,camPos)
+    local before=clock();local snapshot={bodies={},complete=true,at=now};FX.foot.snapshots=FX.foot.snapshots+1
+    for _,e in ipairs(entries) do
+        if clock()-before>.004 then snapshot.complete=false;break end
+        if same(get(e.model,"Parent"),root) then
+            local points={};local torso
+            for _,part in ipairs(e.parts or {}) do
+                if part.name=="uppertorso" or part.name=="leftfoot" or part.name=="rightfoot" then
+                    if same(get(part.obj,"Parent"),e.model) then
+                        FX.foot.reads=FX.foot.reads+1;local p=xyz(get(part.obj,"Position"))
+                        if p and (cfg.UnavailableDistance<=0 or math.max(math.abs(p[1]-camPos[1]),math.abs(p[2]-camPos[2]),math.abs(p[3]-camPos[3]))<cfg.UnavailableDistance) then
+                            if part.name=="uppertorso" then torso=p else points[#points+1]={p=p,foot=true} end
+                        end
+                    end
+                end
+            end
+            if torso then
+                for i=#points,1,-1 do local p=points[i].p
+                    if math.max(math.abs(p[1]-torso[1]),math.abs(p[2]-torso[2]),math.abs(p[3]-torso[3]))>cfg.MaxBodySpan then table.remove(points,i) end
+                end
+                if #points==0 then points[1]={p=torso,foot=false} end
+            end
+            if torso and #points>0 then snapshot.bodies[#snapshot.bodies+1]={entry=e,points=points} end
+        end
+    end
+    local elapsed=clock()-before
+    if elapsed>.004 then snapshot.complete=false end
+    FX.foot.work=FX.foot.work+elapsed;FX.foot.maxWork=math.max(FX.foot.maxWork,elapsed)
+    if not snapshot.complete then FX.foot.incomplete=FX.foot.incomplete+1 end
+    return snapshot
+end
+function FX.footSource(pos,camPos,snapshot)
+    local before=clock()
+    local source={reason="no nearby current body"}
+    if not snapshot or not snapshot.complete or clock()-snapshot.at>.08 then source.reason="incomplete / stale body snapshot";FX.foot.unknown=FX.foot.unknown+1;return source end
+    local cx,cz=pos[1]-camPos[1],pos[3]-camPos[3];local cy=camPos[2]-pos[2]
+    if cx*cx+cz*cz<=9 and cy>=-2 and cy<=8 then
+        source.veto="teammate cue";source.reason="local camera exclusion area";FX.foot.allyVeto=FX.foot.allyVeto+1;return source
+    end
+    local possible={};local nearAlly,nearUnknown
+    for _,body in ipairs(snapshot.bodies) do
+        if clock()-before>.004 then source.reason="source checks over budget";FX.foot.unknown=FX.foot.unknown+1;return source end
+        local matched,near=false,false;local best=math.huge
+        for _,point in ipairs(body.points) do
+            local p=point.p;local dx,dz=pos[1]-p[1],pos[3]-p[3];local d2=dx*dx+dz*dz;local dy=p[2]-pos[2]
+            local vertical=point.foot and math.abs(dy)<=2.5 or (not point.foot and dy>=.5 and dy<=6.5)
+            if vertical then
+                if d2<=12.25 then matched=true;best=math.min(best,math.sqrt(d2)) end
+                if d2<=25 then near=true end
+            end
+        end
+        if near then
+            local e=body.entry
+            -- Re-read candidate uniforms rather than trusting the sound asset.
+            local team,evidence=inferTeam(e.model)
+            e.team=team;e.teamEvidence=evidence;e.nextTeam=clock()+cfg.TeamInterval
+            if not same(get(e.model,"Parent"),root) then team=nil;matched=false end
+            if team==C.LocalTeam then nearAlly=e end
+            if team~="CT" and team~="T" then nearUnknown=true end
+            if matched then possible[#possible+1]={entry=e,team=team,distance=best} end
+        end
+    end
+    if clock()-before>.004 then source.reason="source checks over budget";FX.foot.unknown=FX.foot.unknown+1;return source end
+    -- A teammate close to the cue always vetoes an enemy guess, even when an
+    -- opposing body is slightly closer. Unknown nearby uniforms also veto it.
+    if nearAlly then
+        source.veto="teammate cue";source.reason="teammate within cue exclusion area";source.nearBody=nearAlly.name;source.nearTeam=nearAlly.team
+        FX.foot.allyVeto=FX.foot.allyVeto+1;return source
+    end
+    if nearUnknown then source.reason="unknown uniform near cue";FX.foot.unknown=FX.foot.unknown+1;return source end
+    if #possible~=1 then
+        if #possible>1 then source.reason="multiple nearby bodies";FX.foot.ambiguous=FX.foot.ambiguous+1
+        else FX.foot.unknown=FX.foot.unknown+1 end
+        return source
+    end
+    local match=possible[1];source.team=match.team;source.bodyKey=match.entry.key;source.body=match.entry.model
+    source.bodyName=match.entry.name;source.distance=match.distance;source.reason="unique nearby body / uniform inference"
+    FX.foot.matches=FX.foot.matches+1;return source
+end
+function FX.teamBlock(team,kind,source)
+    if not cfg.SoundHideAllies then return nil end
+    if kind=="STEP" or kind=="LAND" then
+        if C.LocalTeam~="CT" and C.LocalTeam~="T" then return "local team unavailable" end
+        if source and source.veto then return source.veto end
+        local e=source and source.bodyKey and entryMap[source.bodyKey]
+        if not e or not same(e.model,source.body) then return "cue team unknown" end
+        team=e.team
+        if team~="CT" and team~="T" then return "cue team unknown" end
+    end
+    if team and C.LocalTeam and team==C.LocalTeam then return "teammate cue" end
+end
+function FX.footLog(name,source,block)
+    local suffix=FX.cueTeam(name,"STEP")
+    if source.team and suffix and source.team~=suffix then FX.foot.suffixConflicts=FX.foot.suffixConflicts+1 end
+    FX.foot.recent[#FX.foot.recent+1]=string.format("+%.2fs asset=%s suffix=%s bodyTeam=%s body=%s nearTeam=%s horizontal=%s source=%s gate=%s",clock()-started,str(name,75),str(suffix),str(source.team),str(source.bodyName or source.nearBody),str(source.nearTeam),str(source.distance),source.reason,block or "display allowed")
+    if #FX.foot.recent>20 then table.remove(FX.foot.recent,1) end
+end
+
 function FX.scan(now,camPos)
     if now<FX.nextScan then return end
     FX.nextScan=now+cfg.SoundPollInterval; FX.polls=FX.polls+1
@@ -1252,6 +1452,7 @@ function FX.scan(now,camPos)
     FX.status="tracking named cue Parts"; FX.lastChildren=#list
     local limited=#list>cfg.SoundScanCap
     if limited then FX.scanLimited=FX.scanLimited+1 end
+    local footSnapshot
     local seen={}; local count=math.min(#list,cfg.SoundScanCap)
     for i=1,count do
         local obj=list[i]; local name=get(obj,"Name"); local kind=FX.classify(name)
@@ -1260,18 +1461,27 @@ function FX.scan(now,camPos)
             local key=id(obj); seen[key]=true; FX.candidates=FX.candidates+1
             if not FX.seen[key] then
                 if not FX.warm then FX.baseline=FX.baseline+1
-                elseif C.Enabled and cfg.SoundESP then
+                elseif C.Enabled and cfg.ESPEnabled and cfg.SoundESP then
                     local enabled=((kind=="STEP" or kind=="LAND") and cfg.SoundSteps) or (kind=="SHOT" and cfg.SoundShots) or (kind~="STEP" and kind~="LAND" and kind~="SHOT" and cfg.SoundOther)
                     local pos=enabled and xyz(get(obj,"Position"))
                     if pos then
                         local distance=math.sqrt((pos[1]-camPos[1])^2+(pos[2]-camPos[2])^2+(pos[3]-camPos[3])^2)
-                        local team=FX.cueTeam(name,kind)
-                        if cfg.SoundHideAllies and team and C.LocalTeam and team==C.LocalTeam then FX.allyHidden=FX.allyHidden+1
+                        local source,team
+                        if kind=="STEP" or kind=="LAND" then
+                            if not footSnapshot then footSnapshot=FX.footSnapshot(clock(),camPos) end
+                            source=FX.footSource(pos,camPos,footSnapshot);team=source.team
+                        else team=FX.cueTeam(name,kind) end
+                        local teamBlock=FX.teamBlock(team,kind,source)
+                        if source then FX.footLog(name,source,teamBlock) end
+                        if teamBlock then
+                            if teamBlock=="teammate cue" then FX.allyHidden=FX.allyHidden+1
+                            elseif teamBlock=="cue team unknown" then FX.unknownTeamHidden=FX.unknownTeamHidden+1
+                            else FX.localTeamHidden=FX.localTeamHidden+1 end
                         elseif distance>=6 and distance<=cfg.SoundRange and (cfg.UnavailableDistance<=0 or distance<cfg.UnavailableDistance) then
                             FX.emitted=FX.emitted+1
-                            FX.marks[#FX.marks+1]={pos=pos,at=now,kind=kind,team=team,name=name}
+                            FX.marks[#FX.marks+1]={pos=pos,at=now,kind=kind,team=team,name=name,source=source}
                             if #FX.marks>cfg.SoundMaxMarkers then table.remove(FX.marks,1); FX.dropped=FX.dropped+1 end
-                            FX.recent[#FX.recent+1]=string.format("+%.2fs %s %s source=(%.2f,%.2f,%.2f) team=%s",now-started,kind,str(name,80),pos[1],pos[2],pos[3],team and ("~"..team.." name inference") or "unknown")
+                            FX.recent[#FX.recent+1]=string.format("+%.2fs %s %s source=(%.2f,%.2f,%.2f) team=%s",now-started,kind,str(name,80),pos[1],pos[2],pos[3],team and ("~"..team..(source and " body association" or " name inference")) or "unknown")
                             if #FX.recent>20 then table.remove(FX.recent,1) end
                         else FX.invalid=FX.invalid+1 end
                     elseif enabled then FX.invalid=FX.invalid+1 end
@@ -1299,10 +1509,15 @@ function FX.sound(now,camPos)
     for _,mark in ipairs(FX.marks) do
         local pos=mark.pos
         local distance=math.sqrt((pos[1]-camPos[1])^2+(pos[2]-camPos[2])^2+(pos[3]-camPos[3])^2)
-        local ally=cfg.SoundHideAllies and mark.team and C.LocalTeam and mark.team==C.LocalTeam
+        if mark.source and mark.source.bodyKey then
+            local e=entryMap[mark.source.bodyKey]
+            mark.team=e and same(e.model,mark.source.body) and e.team or nil
+        end
+        local teamBlock=FX.teamBlock(mark.team,mark.kind,mark.source)
+        if teamBlock then FX.teamRenderHidden=FX.teamRenderHidden+1 end
         local selected=(mark.kind=="STEP" or mark.kind=="LAND") and cfg.SoundSteps or (mark.kind=="SHOT" and cfg.SoundShots) or (mark.kind~="STEP" and mark.kind~="LAND" and mark.kind~="SHOT" and cfg.SoundOther)
         local x,y
-        if C.Enabled and cfg.SoundESP and selected and not ally and distance<=cfg.SoundRange then x,y=project(pos[1],pos[2],pos[3]) end
+        if C.Enabled and cfg.ESPEnabled and cfg.SoundESP and selected and not teamBlock and distance<=cfg.SoundRange then x,y=project(pos[1],pos[2],pos[3]) end
         if x and not FX.soundFault then
             shown=shown+1; local slot=FX.pool[shown]
             if not slot then slot={}; FX.pool[shown]=slot end
@@ -1405,10 +1620,15 @@ function FX.report()
     local rows={"-- NAMED SOUND CUES / DRAWING CHAMS --",
         "Sound folder=Workspace.Debris.Sounds status="..str(FX.status).." enabled="..tostring(cfg.SoundESP).." interval="..cfg.SoundPollInterval,
         string.format("Cue polls=%d candidateReads=%d baseline=%d emitted=%d active=%d visible=%d allyHidden=%d invalid/near/range=%d expired=%d markerDropped=%d limitedScans=%d errors=%d",FX.polls,FX.candidates,FX.baseline,FX.emitted,#FX.marks,FX.visible or 0,FX.allyHidden,FX.invalid,FX.expired,FX.dropped,FX.scanLimited,FX.errors),
-        "New cue Part identity observed; this is not verified playback, audibility, player identity or exact start time. Unknown team is shown as ?. Team suffix is an inference. Markers stay at their recorded source, never follow a body.",
+        "Sound team check="..tostring(cfg.SoundHideAllies).."; footsteps use a unique nearby current body + uniform team. Asset CT/T suffixes are ignored for step teams. Nearby allies, unknowns and ambiguous sources block display when checked. Unknown gunshots retain prior behavior.",
+        string.format("Footstep/landing cue drops unknownTeam/localTeam=%d/%d; retained-marker team-filter observations=%d",FX.unknownTeamHidden,FX.localTeamHidden,FX.teamRenderHidden),
+        "New cue Part identity observed; not verified playback, audibility, player identity or exact start time. Step teams are spatial/uniform inferences, not confirmed sound ownership. Filter OFF allows unknown ? steps. Markers stay at their recorded source, never follow a body.",
         "Sound limits: "..cfg.SoundScanCap.." children/poll, "..cfg.SoundMaxMarkers.." markers; no position-based suppression of repeated steps. Polling can miss very short cues.",
         string.format("Chams enabled=%s opacity=%.2f targetHz=%g targetCap=%d updates=%d triangleDraws=%d unavailableParts=%d errors=%d",tostring(cfg.Chams),cfg.ChamsOpacity,cfg.ChamsHz,cfg.ChamsMaxTargets,FX.chamUpdates,FX.chamTriangles,FX.chamSkipped,FX.chamErrors),
         "Chams are projected oriented part hulls over the same filtered body cache, not exact mesh silhouettes or visibility checks."}
+    rows[#rows+1]=string.format("Footstep association snapshots=%d positionReads=%d unique=%d unknown=%d ambiguous=%d allyVeto=%d suffixConflicts=%d incomplete=%d work avg/max=%.3f/%.3fms",FX.foot.snapshots,FX.foot.reads,FX.foot.matches,FX.foot.unknown,FX.foot.ambiguous,FX.foot.allyVeto,FX.foot.suffixConflicts,FX.foot.incomplete,1000*FX.foot.work/math.max(1,FX.foot.snapshots),1000*FX.foot.maxWork)
+    rows[#rows+1]="Association reads only existing cached bodies when new steps arrive; unreplicated/extreme bodies cannot identify a step. Feet: 3.5 horizontal / 2.5 vertical studs; torso fallback: cue 0.5..6.5 studs below. Ally/unknown exclusion uses 5 horizontal studs. No nearest-enemy-only guessing."
+    for _,line in ipairs(FX.foot.recent) do rows[#rows+1]="STEP SOURCE "..line end
     if FX.soundFault then rows[#rows+1]="Sound marker fault="..FX.soundFault end
     if FX.chamFault then rows[#rows+1]="Chams fault="..FX.chamFault end
     for _,line in ipairs(FX.recent) do rows[#rows+1]="CUE "..line end
@@ -1437,6 +1657,7 @@ local function step(now)
     for i,e in ipairs(entries) do
         local ok,b=pcall(geometry,e,camPos,vw,vh)
         if ok and b then
+            if cfg.ESPEnabled then
             local slot=slots[i]
             if not slot then slot=newSlot(); slots[i]=slot end
             if not slot.failed then
@@ -1460,6 +1681,9 @@ local function step(now)
                         if slot.dot then pcall(assign,slot.dot,"Visible",false) end
                     end
                 end
+            end
+            else
+                if slots[i] then hideSlot(slots[i]) end
             end
         else
             e.nextBones=0; e.boneScreen=nil
@@ -1487,13 +1711,14 @@ local ok,err=pcall(function()
     assert(finite(cfg.AimDeadzone) and cfg.AimDeadzone>=0 and finite(cfg.AimMaxDistance) and cfg.AimMaxDistance>=0,"Invalid aim distance/deadzone")
     assert(cfg.AimPoint=="Torso" or cfg.AimPoint=="Head" or cfg.AimPoint=="Chest","Invalid aim point")
     assert(finite(cfg.LocalStateInterval) and cfg.LocalStateInterval>=.05,"Invalid state interval")
+    local validBind,bindError=U.valid({ESPToggleKey=cfg.ESPToggleKey,AimHoldKey=cfg.AimHoldKey});assert(validBind,bindError)
     purple=Color3.fromRGB(170,112,240); gray=Color3.fromRGB(125,122,139)
     pale=Color3.fromRGB(219,204,245); ink=Color3.fromRGB(230,226,238); background=Color3.fromRGB(24,23,31)
     assert(Drawing and type(Drawing.new)=="function","Drawing.new unavailable")
 end)
 if not ok then C.State="startup error: "..str(err); print("KONTRA ENEMY ESP: "..C.State); removeAll(); return end
 C.Running=true
-print("KONTRA CLIENT 1.7 ready. RIGHT SHIFT opens the menu. Click VISUALS / AIM TEST / EFFECTS tabs. Feature toggles, reports and Stop are button-only. Aim starts OFF; default operating hold is RMB.")
+print("KONTRA CLIENT 1.9 ready. RIGHT SHIFT opens the menu. Choose your ESP toggle key and Save/Load settings on SETTINGS. ESP has no default bind. Aim starts OFF; default operating hold is RMB.")
 print("Aim has NO wall/visibility check. Hold mode waits for its first torso while held, then locks that body until release/loss. Optional Automatic mode needs no hold and can reacquire after loss. No firing is generated.")
 print("Enemies only ON: inferred from exact T/CT uniform names and your Team attribute. Unknown/conflicting uniforms hidden. Use menu Stop; ~ marks inferred team.")
 while C.Running do
