@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101720">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="FIELD OEM">
+  
+  
+  <meta name="description" content="Find original manufacturer repair portals, view NHTSA safety recalls and use simple diagnostic decision trees for mobile automotive service.">
+  <title>FIELD / OEM — Service Intelligence v1.4</title>
+  
+  <style>
+:root{--ink:#151e28;--ink2:#2c3a46;--sub:#697682;--line:#e1e7ea;--white:#fff;--paper:#f4f6f6;--aqua:#2dc2b2;--aqua-dark:#087e77;--nav:#101820;--nav-item:#1c2832;--amber:#d29d43;--blue:#427eb8;--shadow:0 3px 15px rgba(20,35,45,.035)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--paper);font-size:14px;-webkit-font-smoothing:antialiased}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}a{color:inherit}::selection{background:#bce9e3;color:#10222d}:focus-visible{outline:2px solid #2bbda9;outline-offset:3px}.hidden{display:none!important}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.muted{color:#7b8792}.small{font-size:12px}.fineprint{font-size:12px;line-height:1.75;color:var(--sub)}.shell{display:flex;min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;flex:0 0 249px;background:var(--nav);color:#c7d0d5;display:flex;flex-direction:column;padding:24px 13px 20px;z-index:9}.brand{display:flex;gap:12px;align-items:center;padding:0 11px 58px}.brand-logo{height:38px;width:38px;border-radius:10px;background:#24343c;color:#6ae4d4;display:grid;place-items:center;border:1px solid #355257}.brand-logo svg{width:25px}.brand strong{display:block;color:#fff;font-size:17px;letter-spacing:-.8px;font-weight:800}.brand strong span{color:#52cebb}.brand small{display:block;font-size:8px;letter-spacing:1.8px;color:#738790;font-weight:750;margin-top:3px}.sidebar-label{color:#647781;font-size:10px;letter-spacing:1.7px;font-weight:800;padding:0 17px;margin-bottom:17px}.sidebar-label.second{margin-top:37px}.sidebar nav{display:grid;gap:5px}.nav-item{border:1px solid transparent;background:transparent;color:#9eacb6;padding:12px 13px;text-align:left;border-radius:9px;display:flex;align-items:center;gap:12px;font-size:12px;font-weight:650;min-height:46px;width:100%;transition:.15s}.nav-item:hover{background:#1b2730;color:white}.nav-item.active{background:#24353e;color:#f3fafb;border-color:#34515b}.nav-item.active .nav-ico{color:#65dfd1}.nav-ico{font-family:"Segoe UI Symbol",sans-serif;font-size:19px;width:21px;text-align:center;font-weight:400}.nav-arrow{margin-left:auto;color:#546c77;font-size:19px}.sidebar-footer{margin:auto 9px 0;border-top:1px solid #2a353e;padding:20px 2px 0;color:#7ca9a6;font-size:9px;font-weight:800;letter-spacing:1px;line-height:1.4}.sidebar-footer small{display:block;margin-top:9px;font-size:10px;letter-spacing:.2px;color:#71818a;font-weight:500}.sidebar-footer .dot{display:inline-block;background:#45caaa;border-radius:50%;height:6px;width:6px;margin-right:6px;vertical-align:middle;box-shadow:0 0 0 3px #2b5c52}.workspace{flex:1;min-width:0}.topbar{height:69px;border-bottom:1px solid var(--line);background:#fff;display:flex;justify-content:space-between;align-items:center;padding:0 39px;gap:12px}.crumb,.top-actions{display:flex;align-items:center;gap:16px}.crumb{font-size:11px}.crumb .muted{letter-spacing:1.1px;font-size:10px;font-weight:800}.crumb .slash{color:#c4cdd2}.crumb strong{font-weight:700}.top-status{border:1px solid var(--line);border-radius:50px;color:#63717a;font-size:9px;font-weight:800;letter-spacing:1.1px;padding:9px 12px;white-space:nowrap}.top-status i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--aqua);margin-right:5px}.menu-toggle{display:none;border:0;background:transparent;color:var(--ink);font-size:22px;padding:5px 10px}.button{border-radius:7px;border:1px solid #dae3e6;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:700;font-size:12px;padding:12px 15px;min-height:40px;white-space:nowrap;text-decoration:none;transition:background .15s,transform .15s}.button:hover{transform:translateY(-1px)}.button.primary{background:#29b6a7;color:#0e2428;border-color:#29b6a7}.button.primary:hover{background:#4fd5c6}.button.ghost{background:transparent;border-color:transparent;color:#6a7580}.button.ghost:hover{background:#f0f4f4;color:#25353f}.button.outline{background:#fff;border-color:#d9e1e4;color:#243943}.button.thin{background:#fff;border:1px solid #dbe3e6;color:#475e68;padding:9px 13px;min-height:37px}.top-help{font-size:11px}.selector-section{background:linear-gradient(117deg,#1c2730 0%,#202f37 66%,#1e2b33 100%);padding:31px 39px 30px;color:#fff}.section-kicker{display:flex;align-items:center;gap:9px;font-size:10px;color:#72ded1;letter-spacing:1.8px;font-weight:800}.kicker-line{width:15px;height:2px;background:#4bcebe;display:inline-block}.section-step{margin-left:auto;color:#738c97;font-size:9px}.selector-title{display:flex;align-items:center;justify-content:space-between;margin-top:12px}.selector-title h1{font-size:clamp(24px,2.7vw,38px);letter-spacing:-1.5px;font-weight:750;line-height:1.22;margin:0}.title-dot{color:#54d6c5}.selector-title p{font-size:12px;color:#aabac1;margin:11px 0 24px;line-height:1.6}.subtle-illustration{width:190px;color:#5c8490;opacity:.45;flex-shrink:0;padding-right:7px}.subtle-illustration svg{display:block;width:100%}.vehicle-form{background:#fff;color:var(--ink);border-radius:10px;padding:18px 21px 14px;box-shadow:0 12px 25px #0b151a21}.vehicle-grid{display:grid;grid-template-columns:.84fr 1fr 1fr 1.24fr;gap:15px}.vehicle-form label,.import-form label,.import-aside label,.job-main label{display:flex;flex-direction:column;gap:9px;font-size:10px;font-weight:800;letter-spacing:.8px;color:#687985;min-width:0}.vehicle-form input,.vehicle-form select,.import-form input,.import-form select,.import-form textarea,.import-aside input,.job-main input,.job-main textarea,.diag-sidebar input{border:1px solid #dce4e8;background:#f9fbfb;border-radius:7px;padding:0 12px;height:41px;width:100%;color:#273743;outline:none;font-size:12px;letter-spacing:normal;min-width:0}.vehicle-form input:focus,.vehicle-form select:focus,.import-form input:focus,.import-form textarea:focus,.job-main input:focus,.job-main textarea:focus,.diag-sidebar input:focus{border-color:#39bdb1;box-shadow:0 0 0 3px #42c2ae19}.vehicle-form select{appearance:none;background:#f9fbfb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' stroke='%23728691' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat right 13px center;padding-right:30px}.vehicle-bottom{display:flex;gap:13px;margin-top:15px}.query-wrap{flex:1;position:relative;min-width:0}.vehicle-form .query-wrap input{padding-left:36px}.search-ico{position:absolute;left:13px;top:5px;font-size:25px;line-height:30px;color:#9aa8af}.search-button{min-width:161px}.vin-row{display:flex;gap:11px;align-items:center;border-top:1px solid #eef1f3;margin-top:16px;padding-top:13px;min-height:37px}.vin-row input{border:0;background:transparent;font-family:ui-monospace,monospace;font-size:11px;letter-spacing:1.3px;padding-left:0;max-width:255px;height:34px}.mini-label{color:#87959d;font-size:9px;font-weight:800;letter-spacing:1.1px;white-space:nowrap}.vin-note{font-size:11px;color:#5e8580;line-height:1.4}.content-area{padding:34px 39px 60px;max-width:1590px;margin:auto}.panel-intro{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.section-kicker.mini{font-size:9px;letter-spacing:1.6px;color:#168f85}.section-kicker.mini .kicker-line{background:#1ba99d}.panel-intro h2{font-size:23px;margin:9px 0 5px;letter-spacing:-.6px}.panel-intro p{font-size:12px;color:#849097;line-height:1.6;margin:0}.count-pill{display:inline-flex;align-items:center;justify-content:center;font-size:10px;background:#e6ecee;color:#667880;padding:5px 9px;border-radius:50px;vertical-align:middle;margin-left:7px;letter-spacing:0;font-weight:700}.source-legend{display:flex;gap:13px;align-items:center;flex-wrap:wrap}.key-item{color:#8b979d;font-size:10px;white-space:nowrap}.badge-circle{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}.badge-circle.teal{background:#30b8a7}.badge-circle.gold{background:#d9a854}.badge-circle.slate{background:#788a9c}.tabs{display:flex;align-items:center;gap:20px;border-bottom:1px solid #dce4e6;margin-bottom:19px;overflow-x:auto;scrollbar-width:thin}.tab{border:0;border-bottom:2px solid transparent;background:none;font-size:11px;font-weight:650;color:#8d99a1;padding:12px 1px 13px;white-space:nowrap}.tab.active{border-color:#26b6a7;color:#182d33}.tab:hover{color:#1a343b}.results-stack{display:grid;gap:14px}.surface,.result-card,.feature-card,.empty-card{background:#fff;border:1px solid #dfe7e9;border-radius:10px;box-shadow:var(--shadow)}.result-card{padding:20px;display:flex;gap:17px;align-items:flex-start}.result-icon{width:42px;height:42px;flex-shrink:0;display:grid;place-items:center;border-radius:9px;background:#eef9f7;color:#1a9f94;border:1px solid #def1ed;font-size:22px}.result-icon.amber{background:#fff9ee;color:#c7943d;border-color:#f7e9ca}.result-icon.slate{background:#f0f3f6;color:#59748b;border-color:#e4eaf0}.result-details{flex:1;min-width:0}.result-meta{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:7px}.pill{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;border-radius:4px;background:#eff7f6;color:#298c85;padding:5px 7px}.pill.gold{color:#956a29;background:#fcf4e4}.pill.slate{color:#607583;background:#eef2f4}.tiny-meta{font-size:10px;color:#87939b}.result-card h3{font-size:16px;letter-spacing:-.3px;margin:0 0 7px;line-height:1.4}.result-card p{font-size:12px;line-height:1.7;color:#74818a;margin:0;max-width:820px}.result-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}.link-btn{border:1px solid #dce7e9;border-radius:7px;background:#fff;padding:10px 11px;font-weight:750;font-size:11px;color:#277d79;text-decoration:none;display:inline-flex;gap:8px;align-items:center}.link-btn:hover{background:#f1faf8}.flat-btn{border:0;background:transparent;color:#258c85;font-size:11px;font-weight:750;padding:9px 0}.warning-strip{display:flex;align-items:flex-start;gap:10px;background:#fff9ed;border:1px solid #f4e6c8;border-radius:9px;color:#8c6733;padding:13px 17px;font-size:11px;line-height:1.65}.warning-strip b{color:#8c6526}.info-strip{display:flex;align-items:flex-start;gap:10px;background:#ebf7f5;border:1px solid #d0ece6;border-radius:9px;color:#376c68;padding:14px 16px;font-size:11px;line-height:1.65}.empty-card{padding:34px 22px;text-align:center}.empty-symbol{margin:auto auto 12px;width:52px;height:52px;border-radius:15px;background:#e9f4f1;color:#42a99c;display:grid;place-items:center;font-size:27px}.empty-card h3{font-size:16px;margin:0 0 9px}.empty-card p{max-width:470px;margin:0 auto 15px;line-height:1.65;color:var(--sub);font-size:12px}.two-col{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(270px,1fr);gap:16px}.feature-card{padding:19px}.feature-card h3{margin:0 0 8px;font-size:14px}.feature-card p{color:#72818a;font-size:12px;line-height:1.65}.feature-card .subline{margin-bottom:0}.quick-links{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.quick-links a{display:inline-flex;align-items:center;text-decoration:none;border:1px solid #dce5e7;border-radius:7px;padding:10px 12px;font-size:11px;color:#27695f;font-weight:750}.quick-links a:hover{background:#f1faf8}.recall-meta{display:flex;flex-wrap:wrap;gap:8px;margin:11px 0}.recall-meta span{font-size:10px;color:#667884;border-right:1px solid #dae2e5;padding-right:11px}.recall-meta span:last-child{border:0}.recall-preview{display:grid;gap:9px;max-width:100%;margin-top:13px}.recall-preview p{font-size:12px}.recall-preview b{color:#263842}.expand-details{margin-top:10px;border-top:1px solid #eef1f2;padding-top:10px}.expand-details summary{cursor:pointer;color:#268e81;font-size:11px;font-weight:750}.expand-details p{margin-top:8px}.document-steps{padding:12px 0 0 21px;margin:0;line-height:1.7;font-size:12px;color:#52616c}.document-steps li{padding:4px 0}.doc-warning{padding:10px 12px;background:#fff5e7;border-radius:7px;font-size:12px;color:#8d6936;margin-top:11px;line-height:1.6}.doc-tools{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.tool-chip{background:#eef4f5;border-radius:5px;padding:7px 8px;font-size:11px;color:#506c77}.diagnostic-layout{display:grid;grid-template-columns:272px minmax(0,1fr);gap:17px;align-items:start}.diag-sidebar,.diag-main{background:white;border:1px solid #dfe7e9;border-radius:10px;padding:20px;box-shadow:var(--shadow)}.diag-sidebar h3{font-size:11px;letter-spacing:.4px;margin:0 0 13px;color:#3b4c59}.symptom-button{border:1px solid transparent;background:#fff;padding:11px;display:flex;align-items:center;justify-content:space-between;text-align:left;border-radius:7px;width:100%;font-size:12px;color:#63727c;margin-bottom:5px;min-height:42px}.symptom-button:hover{background:#f4f8f8}.symptom-button.active{color:#237c75;background:#eaf8f5;border-color:#d4ebe6;font-weight:800}.symptom-button span:last-child{font-size:17px}.divider{height:1px;background:#e5ebed;margin:20px 0}.dtc-row{display:flex;gap:6px}.dtc-row input{min-width:0}.dtc-result{font-size:11px;line-height:1.7;color:#72828b;background:#f5f7f8;border-radius:6px;padding:11px;margin-top:10px}.dtc-result strong{color:#263c49}.mini-flag{border:1px solid #d7e5e3;background:#edf6f4;padding:10px 12px;border-radius:6px;font-size:9px;letter-spacing:1.1px;color:#31867e;font-weight:800;white-space:nowrap}.diag-header-row{display:flex;gap:14px;justify-content:space-between;align-items:start}.diag-header-row h3{font-size:20px;letter-spacing:-.5px;margin:5px 0 9px}.diag-header-row p{font-size:12px;line-height:1.6;color:#6c7d86;margin:0}.diag-stamp{color:#528f88;font-size:10px;font-weight:800;letter-spacing:.8px;border:1px solid #dbece8;border-radius:5px;padding:7px 8px;white-space:nowrap}.diag-progress{display:flex;gap:4px;margin:19px 0 20px}.diag-progress i{height:4px;background:#e7eeef;border-radius:5px;flex:1}.diag-progress i.on{background:#31b9aa}.diag-question{font-size:17px;font-weight:750;line-height:1.5;margin-bottom:10px}.diag-hint{font-size:12px;color:#7b8993;line-height:1.7;margin-bottom:22px}.diag-answers{display:flex;gap:12px;flex-wrap:wrap}.answer-btn{flex:1;min-width:130px;border:1px solid #dce6e6;border-radius:8px;background:#fff;color:#334852;text-align:left;padding:17px;font-size:12px;font-weight:750;display:flex;justify-content:space-between}.answer-btn:hover{background:#edf8f5;border-color:#82d2c8}.diag-result{background:#edf8f4;border:1px solid #cbe8df;border-radius:9px;padding:18px;margin-bottom:17px}.diag-result .result-label{color:#1e8c81;font-size:10px;letter-spacing:1.3px;font-weight:800}.diag-result h4{margin:9px 0;font-size:17px}.diag-result p{line-height:1.8;color:#526d68;font-size:12px}.diag-note{background:#f8f7f1;border:1px solid #e8e2d0;border-radius:7px;padding:11px;font-size:11px;color:#80714e;line-height:1.6;margin-top:18px}.diag-steps-log{margin-top:18px;border-top:1px solid #e4ebed;padding-top:14px;font-size:11px;color:#819099;line-height:1.7}.diag-bottom-actions{margin-top:20px;display:flex;gap:9px;flex-wrap:wrap}.tool-category{margin-bottom:17px}.tool-category-title{font-size:11px;color:#81919b;letter-spacing:1px;font-weight:800;padding:0 2px 10px;margin:0}.tool-table{display:grid;gap:8px}.tool-row{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:13px 15px;background:#fff;border:1px solid #e0e7e9;border-radius:8px}.tool-row strong{display:block;font-size:12px}.tool-row small{display:block;margin-top:5px;color:#8a99a1;font-size:10px}.tool-row a{font-size:11px;text-decoration:none;color:#258c82;white-space:nowrap;font-weight:800}.job-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,.82fr);gap:16px;align-items:start}.job-main,.job-aside,.import-form,.import-aside{padding:23px}.form-title{font-size:10px;font-weight:800;letter-spacing:1.2px;color:#72838d;margin-bottom:18px}.job-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.job-main>label,.import-form>label{margin-top:18px}.job-main textarea,.import-form textarea{height:auto;resize:vertical;padding:11px 13px;line-height:1.6;min-height:80px}.job-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap;margin-top:20px}.job-actions .muted,.job-actions .fineprint{margin-right:auto}.job-aside h3{font-size:17px;margin:0 0 6px}.job-aside p{font-size:12px;color:#7e8e97;line-height:1.7}.check-list{padding:0;margin:0;list-style:none}.check-list li{padding:9px 0 9px 21px;position:relative;font-size:11px;color:#63737d;line-height:1.4}.check-list li:before{content:'✓';position:absolute;left:0;color:#31b29f;font-weight:900}.import-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(245px,.7fr);gap:17px;align-items:start}.import-form .fineprint{margin:-4px 0 17px}.import-form label,.job-main label,.import-aside label{font-size:10px}.import-form textarea[name="steps"]{min-height:140px}.import-form .job-grid{margin-bottom:18px}.import-form select{width:100%}.import-form input,.import-form select,.job-main input{height:42px}.import-form label .muted{font-weight:400;letter-spacing:normal}.required{color:#b09a71;font-size:8px;margin-left:5px}.import-aside p{line-height:1.7;color:#697b86;font-size:12px}.import-aside h3{font-size:13px}.import-aside code{font-family:ui-monospace,monospace;color:#168a7f}.alert{background:#fff7e7;border:1px solid #eaddbb;border-radius:7px;margin-bottom:18px;color:#815d2d;display:flex;gap:20px;align-items:center;justify-content:space-between;padding:13px;font-size:12px}.alert button{border:0;background:none;color:inherit;font-size:20px}.loading{display:flex;align-items:center;gap:13px;color:#7c8d97;font-size:12px;padding:30px 4px}.spinner{height:18px;width:18px;border:2px solid #d5e5e2;border-top-color:#27b6a7;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}dialog{border:1px solid #d8e1e3;border-radius:12px;padding:26px;max-width:min(560px,calc(100% - 28px));line-height:1.8;box-shadow:0 20px 80px #0f283b44}dialog::backdrop{background:#0b141aa9}dialog p{font-size:12px;color:#647780}.dialog-top{display:flex;align-items:center;justify-content:space-between;gap:15px;font-size:18px}.icon-btn{border:0;background:none;font-size:25px;color:#75848a}.example-block{background:#f5f8f8;padding:13px;border-radius:7px;margin-top:12px}.example-block p{margin:0}.footer-note{color:#84939c;font-size:11px;text-align:center;margin-top:17px;line-height:1.65}
+@media(max-width:1200px){.sidebar{flex-basis:226px}.selector-section{padding:28px}.content-area{padding:30px 28px}.topbar{padding:0 28px}.source-legend{display:none}.vehicle-grid{grid-template-columns:1fr 1fr}.subtle-illustration{display:none}}
+@media(max-width:850px){.sidebar{position:fixed;transform:translateX(-105%);transition:transform .2s;box-shadow:0 3px 20px #0004}.sidebar.open{transform:translateX(0)}.menu-toggle{display:inline-block}.topbar{padding:0 18px;height:58px}.top-status{display:none}.selector-section{padding:25px 18px}.selector-title h1{font-size:27px}.content-area{padding:25px 18px}.two-col{grid-template-columns:1fr}.diagnostic-layout{grid-template-columns:1fr}.diag-sidebar{padding:15px}.job-layout,.import-layout{grid-template-columns:1fr}.result-card{flex-wrap:wrap}.result-actions{padding-left:58px}.panel-intro{align-items:start}.tabs{gap:17px}}
+@media(max-width:540px){.top-help{display:none}.vehicle-grid{grid-template-columns:1fr 1fr;gap:12px}.vehicle-form{padding:16px 13px}.vehicle-form label{font-size:9px}.vehicle-form select,.vehicle-form input{font-size:13px}.vehicle-bottom{flex-direction:column}.search-button{width:100%}.vin-row{flex-wrap:wrap;gap:5px 10px}.vin-row input{flex:1;max-width:unset}.vin-note{flex:1 0 100%}.section-kicker{font-size:9px}.section-step{display:none}.selector-title h1{font-size:24px}.selector-title p{font-size:11px}.content-area{padding:21px 13px}.panel-intro{flex-wrap:wrap}.panel-intro h2{font-size:22px}.mini-flag{display:none}.result-card{padding:15px;gap:11px}.result-icon{width:35px;height:35px;font-size:18px}.result-card h3{font-size:14px}.result-actions{padding:0;margin-left:46px;flex-wrap:wrap}.feature-card{padding:15px}.result-actions .button,.link-btn{font-size:11px}.vehicle-bottom{margin-top:12px}.job-grid{grid-template-columns:1fr}.job-main,.job-aside,.import-form,.import-aside{padding:16px}.crumb{gap:9px}.topbar .crumb .muted,.topbar .crumb .slash{display:none}.tool-row{align-items:start;flex-wrap:wrap}.diag-answers{flex-direction:column}.answer-btn{min-height:48px}}
+@media print{body{background:white}.sidebar,.topbar,.selector-section,.tabs,.panel-intro .button,.job-actions,.content-area>.alert,.page-view:not(#view-job){display:none!important}.content-area{padding:0}.workspace{width:100%}.shell{display:block}.job-layout{display:block}.job-main,.job-aside{break-inside:avoid;border:0;box-shadow:none;padding:12px}.job-aside{margin-top:20px}.job-main input,.job-main textarea{border:0;border-bottom:1px solid #aaa;background:#fff}.panel-intro{display:block!important}#view-job{display:block!important}#view-job .panel-intro{display:block!important}#view-job .panel-intro h2{margin:0 0 8px}.job-main textarea{height:auto;min-height:120px}*{print-color-adjust:exact}}
+
+/* A full VIN input and decode action must remain readable on small devices. */
+@media(max-width:540px){
+ .vin-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+ .vin-row .mini-label{grid-column:1/-1}
+ .vin-row input{grid-column:1;width:100%;min-width:0;max-width:none;letter-spacing:.9px;font-size:12px}
+ .vin-row #decodeVin{grid-column:2;max-width:140px}
+ .vin-row .vin-note{grid-column:1/-1;max-width:100%}
+}
+
+/* On phones, source links belong under the document text, not beside a 90px column. */
+@media(max-width:540px){
+ .result-card{display:grid;grid-template-columns:35px minmax(0,1fr);align-items:start;gap:12px}
+ .result-icon{grid-column:1;grid-row:1}
+ .result-details{grid-column:2;grid-row:1;min-width:0}
+ .result-actions{grid-column:2;grid-row:2;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:flex-start}
+ .result-actions .link-btn{white-space:normal}
+}
+
+/* v1.1 — phone-first app controls; desktop retains the full service workspace. */
+.mobile-bottom-nav{display:none}
+.mobile-install{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid #d4e4e2;background:#eaf8f5;color:#177f77;font-weight:750;border-radius:8px;padding:10px 12px;white-space:nowrap}
+.mobile-install[hidden]{display:none}
+.network-status{background:#fff3d9;color:#76541a;border-bottom:1px solid #f0dbab;font-size:12px;padding:12px 22px;line-height:1.55}
+.install-info{padding:14px;background:#f3f7f7;border-radius:9px;margin:12px 0}
+.install-info strong{font-size:13px;color:#22373b}
+.install-info p{margin:4px 0 14px}
+.install-info p:last-child{margin-bottom:0}
+@media(max-width:850px){
+ .compact-selector .selector-section{display:none}
+ .sidebar{z-index:25;top:0;bottom:0;overflow:auto;max-width:min(300px,85vw);padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+ .workspace{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+ .mobile-bottom-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;position:fixed;z-index:20;bottom:0;left:0;right:0;background:#121d25;border-top:1px solid #2d3c44;box-shadow:0 -4px 20px #06141c20;padding:7px 7px calc(7px + env(safe-area-inset-bottom,0px))}
+ .mobile-bottom-nav button{font:inherit;border:0;border-radius:8px;background:transparent;color:#b2bec6;min-width:0;min-height:53px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;padding:4px 1px}
+ .mobile-bottom-nav button span{font-size:23px;line-height:1.1}
+ .mobile-bottom-nav button small{font-size:10px;font-weight:600;letter-spacing:.1px;white-space:nowrap}
+ .mobile-bottom-nav button.active,.mobile-bottom-nav button[aria-current="page"]{background:#203732;color:#6ae4d4}
+ .mobile-bottom-nav button:focus-visible{outline:2px solid #8be9dd;outline-offset:-2px}
+ .topbar{padding-top:env(safe-area-inset-top,0px);height:calc(58px + env(safe-area-inset-top,0px))}
+ .menu-toggle{min-height:44px;min-width:44px}
+ .top-actions{gap:6px}
+ .top-help{display:none}
+ .mobile-install{min-height:44px;min-width:44px;font-size:12px}
+ .content-area{padding-top:22px}
+ .button,.link-btn,.answer-btn,.symptom-button,.tab,.nav-item{min-height:44px}
+ .tabs{overflow-x:auto;max-width:100%;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:22px;white-space:nowrap}
+ .tabs::-webkit-scrollbar{display:none}
+ .page-view{min-width:0}
+ .result-details,.result-card,.surface,.feature-card,.job-layout,.import-layout{min-width:0;overflow-wrap:anywhere}
+ select,input,textarea{font-size:16px!important}
+ #vinInput{font-size:16px!important;letter-spacing:0!important}
+ dialog{max-height:85%;overflow:auto}
+}
+@media(max-width:540px){
+ .vehicle-form label{font-size:10px}
+ .vehicle-form select,.vehicle-form input{height:48px}
+ .selector-section{padding:21px 13px}
+ .vehicle-form{padding:17px 14px}
+ .vehicle-grid{gap:13px}
+ .result-actions .link-btn,.result-actions .button{font-size:13px}
+ .result-actions{grid-column:1/-1;justify-content:flex-start}
+ .result-actions a{max-width:100%}
+ .dtc-row input{font-size:16px!important}
+ .job-actions{justify-content:stretch}
+ .job-actions .button{flex:1 1 auto}
+ .panel-intro h2{font-size:22px}
+}
+@media(max-width:360px){
+ .mobile-bottom-nav button small{font-size:9px}
+ .mobile-install span{display:none}
+ .vehicle-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
+ .vehicle-form{padding:14px 11px}
+ .content-area{padding-left:10px;padding-right:10px}
+}
+@media print{.mobile-bottom-nav,.mobile-install,.network-status{display:none!important}.workspace{padding-bottom:0}}
+
+/* iPhone-first refinements: never zoom tiny input controls; respect safe-area bottom and avoid horizontal overflow. */
+.phone-banner{background:#e8f6f2;color:#2b7169;border-bottom:1px solid #cdebe2;padding:9px 22px;font-size:12px;line-height:1.5}
+.phone-banner-dot{color:#29aa91;font-size:11px;margin-right:6px}
+.local-backup{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.backup-label{display:inline-flex!important;align-items:center;justify-content:center;border:1px solid #dae3e6;padding:10px 13px!important;border-radius:7px;font-size:12px!important;letter-spacing:0!important;color:#37474f!important;min-height:40px;background:white;cursor:pointer}
+.backup-label input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.vin-official{font-size:11px;color:#276f6c;display:inline-block;margin:4px 0}
+@media(max-width:850px){.phone-banner{padding:9px 18px}}
+@media(max-width:540px){
+  .vehicle-form input,.vehicle-form select,.import-form input,.import-form select,.import-form textarea,.job-main input,.job-main textarea,.diag-sidebar input,.import-aside input{font-size:16px!important}
+  .vehicle-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .vin-row .vin-official{grid-column:1/-1}
+  .phone-banner{font-size:11px;padding:8px 12px}
+  .panel-intro{gap:8px}
+  input[type="file"]{max-width:100%}
+}
+@media print{.phone-banner{display:none}}
+
+/* v1.3: Native, touch-friendly model picker and manual fallback */
+.vehicle-form #modelInput{margin-top:7px;background:#fff}.vehicle-form #modelSelect{color:#273743;appearance:auto;padding-right:7px}.vehicle-form #yearSelect,.vehicle-form #makeSelect{appearance:auto;background-image:none;padding-right:7px}
+
+/* v1.4: clear signal when an iPhone is only previewing HTML. Hidden once JS initializes. */
+.preview-warning{padding:13px 22px;background:#fff4d8;color:#684e17;border-bottom:2px solid #e4bd63;font-size:13px;line-height:1.6}
+.preview-warning strong{display:block;font-size:13px;margin-bottom:3px}
+.preview-warning a{font-weight:800;text-decoration:underline;color:#664000}
+.preview-warning[hidden]{display:none!important}
+@media(max-width:850px){.preview-warning{padding:12px 18px}}
+@media(max-width:540px){.preview-warning{padding:11px 14px;font-size:12px}}
+@media print{.preview-warning{display:none!important}}
+
+  </style>
+
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="brand-logo"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h13l7 7-7 7H6V9Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 16h9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></div><div><strong>FIELD<span> / OEM</span></strong><small>SERVICE INTELLIGENCE</small></div></div>
+    <div class="sidebar-label">WORKSPACE</div>
+    <nav aria-label="Main navigation">
+      <button class="nav-item active" data-view="library"><span class="nav-ico">▤</span><span>Repair library</span><span class="nav-arrow">›</span></button>
+      <button class="nav-item" data-view="diagnostics"><span class="nav-ico">⌁</span><span>Guided diagnostics</span><span class="nav-arrow">›</span></button>
+      <button class="nav-item" data-view="tools"><span class="nav-ico">⚒</span><span>Specialty tools</span><span class="nav-arrow">›</span></button>
+      <button class="nav-item" data-view="job"><span class="nav-ico">☷</span><span>Job worksheet</span><span class="nav-arrow">›</span></button>
+    </nav>
+    <div class="sidebar-label second">MANAGEMENT</div>
+    <nav aria-label="Management navigation"><button class="nav-item" data-view="import"><span class="nav-ico">⊕</span><span>Add source document</span><span class="nav-arrow">›</span></button></nav>
+    <div class="sidebar-footer"><span class="dot"></span> LOCAL FIRST · OEM LINKS <small>OEM manuals require publisher access.</small><small>NO COMPUTER REQUIRED · v1.4</small></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <div class="crumb"><button class="menu-toggle" id="menuToggle" aria-label="Toggle menu" aria-expanded="false">☰</button><span class="muted">WORKSPACE</span><span class="slash">/</span><strong id="crumbTitle">Repair library</strong></div>
+      <div class="top-actions"><span class="top-status"><i></i> iPHONE EDITION</span><button class="button ghost top-help" id="helpBtn">How sources work <span>↗</span></button><button class="button mobile-install" id="installApp" type="button" aria-label="Install or add to home screen">＋ <span>Install app</span></button></div>
+    </header>
+    <main>
+      <div id="interactiveCheck" class="preview-warning" role="alert">
+        <strong>⚠ This is a non-interactive file preview.</strong>
+        <span>This live browser version is interactive. Choose a vehicle, press Search and use the service tabs below. Manufacturer repair information may require a subscription.</span>
+      </div>
+      <div class="phone-banner" role="note"><span class="phone-banner-dot">●</span> <strong>iPhone-ready website</strong><span> · Mobile search and tabs are interactive in Safari once hosted over HTTPS</span></div>
+      <noscript><div style="padding:14px;background:#fff3d6;color:#624800;font-weight:700">Preview mode: scripts are disabled. The year/make/model menus are visible, but searching requires opening the site in Safari from your HTTPS website address. Upload the ZIP to Netlify Drop from your iPhone.</div></noscript>
+      <div id="networkStatus" class="network-status hidden" role="status" aria-live="polite">Offline mode: diagnostics and saved worksheets remain available. Manufacturer portals and live recalls require internet access.</div>
+      <section class="selector-section" aria-labelledby="vehicleHeading">
+        <div class="section-kicker"><span class="kicker-line"></span> VEHICLE LOOKUP <span class="section-step">01 / START HERE</span></div>
+        <div class="selector-title"><div><h1 id="vehicleHeading">Find the right repair information<span class="title-dot">.</span></h1><p>OEM sources, basic diagnostics, local notes and live recall lookups when supported.</p></div><div class="subtle-illustration" aria-hidden="true"><svg viewBox="0 0 175 70"><path d="M12 49h151M23 47l12-22h95l18 22M38 25l9-12h69l13 12M30 48h116" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="50" cy="49" r="12" fill="#1c2730" stroke="currentColor" stroke-width="2"/><circle cx="127" cy="49" r="12" fill="#1c2730" stroke="currentColor" stroke-width="2"/><path d="M51 25v22M112 25v22" stroke="currentColor" opacity=".35"/></svg></div></div>
+        <form id="vehicleForm" class="vehicle-form">
+          <div class="vehicle-grid">
+            <label>MODEL YEAR<select name="year" id="yearSelect" required><option value="">Select year</option><option value="2027">2027</option><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option><option value="2021">2021</option><option value="2020">2020</option><option value="2019">2019</option><option value="2018">2018</option><option value="2017">2017</option><option value="2016">2016</option><option value="2015">2015</option><option value="2014">2014</option><option value="2013">2013</option><option value="2012">2012</option><option value="2011">2011</option><option value="2010">2010</option><option value="2009">2009</option><option value="2008">2008</option><option value="2007">2007</option><option value="2006">2006</option><option value="2005">2005</option><option value="2004">2004</option><option value="2003">2003</option><option value="2002">2002</option><option value="2001">2001</option><option value="2000">2000</option><option value="1999">1999</option><option value="1998">1998</option><option value="1997">1997</option><option value="1996">1996</option><option value="1995">1995</option><option value="1994">1994</option><option value="1993">1993</option><option value="1992">1992</option><option value="1991">1991</option><option value="1990">1990</option><option value="1989">1989</option><option value="1988">1988</option><option value="1987">1987</option><option value="1986">1986</option><option value="1985">1985</option><option value="1984">1984</option><option value="1983">1983</option><option value="1982">1982</option><option value="1981">1981</option></select></label>
+            <label>MAKE<select name="make" id="makeSelect" required><option value="">Select make</option><option value="Acura">Acura</option><option value="Alfa Romeo">Alfa Romeo</option><option value="Audi">Audi</option><option value="BMW">BMW</option><option value="Buick">Buick</option><option value="Cadillac">Cadillac</option><option value="Chevrolet">Chevrolet</option><option value="Chrysler">Chrysler</option><option value="Dodge">Dodge</option><option value="Fiat">Fiat</option><option value="Ford">Ford</option><option value="GMC">GMC</option><option value="Genesis">Genesis</option><option value="Honda">Honda</option><option value="Hyundai">Hyundai</option><option value="Infiniti">Infiniti</option><option value="Jeep">Jeep</option><option value="Kia">Kia</option><option value="Land Rover">Land Rover</option><option value="Lexus">Lexus</option><option value="Lincoln">Lincoln</option><option value="Mazda">Mazda</option><option value="Mercedes-Benz">Mercedes-Benz</option><option value="Mini">Mini</option><option value="Mitsubishi">Mitsubishi</option><option value="Nissan">Nissan</option><option value="Porsche">Porsche</option><option value="Ram">Ram</option><option value="Scion">Scion</option><option value="Subaru">Subaru</option><option value="Tesla">Tesla</option><option value="Toyota">Toyota</option><option value="Volkswagen">Volkswagen</option><option value="Volvo">Volvo</option></select></label>
+            <label>MODEL<select id="modelSelect" name="modelSelected" aria-label="Choose model"><option value="">Select a make, then model</option><optgroup label="Ford"><option value="F-150">F-150</option><option value="F-250">F-250</option><option value="Escape">Escape</option><option value="Explorer">Explorer</option><option value="Expedition">Expedition</option><option value="Focus">Focus</option><option value="Fusion">Fusion</option><option value="Mustang">Mustang</option><option value="Taurus">Taurus</option><option value="Edge">Edge</option><option value="Ranger">Ranger</option><option value="Bronco">Bronco</option></optgroup><optgroup label="Chevrolet"><option value="Silverado 1500">Silverado 1500</option><option value="Equinox">Equinox</option><option value="Malibu">Malibu</option><option value="Tahoe">Tahoe</option><option value="Suburban">Suburban</option><option value="Traverse">Traverse</option><option value="Colorado">Colorado</option><option value="Camaro">Camaro</option><option value="Corvette">Corvette</option></optgroup><optgroup label="Toyota"><option value="Camry">Camry</option><option value="Corolla">Corolla</option><option value="RAV4">RAV4</option><option value="Tacoma">Tacoma</option><option value="Tundra">Tundra</option><option value="Highlander">Highlander</option><option value="4Runner">4Runner</option><option value="Prius">Prius</option><option value="Sienna">Sienna</option></optgroup><optgroup label="Honda"><option value="Civic">Civic</option><option value="Accord">Accord</option><option value="CR-V">CR-V</option><option value="Pilot">Pilot</option><option value="Odyssey">Odyssey</option><option value="HR-V">HR-V</option><option value="Ridgeline">Ridgeline</option></optgroup><optgroup label="Nissan"><option value="Altima">Altima</option><option value="Sentra">Sentra</option><option value="Rogue">Rogue</option><option value="Frontier">Frontier</option><option value="Pathfinder">Pathfinder</option><option value="Murano">Murano</option><option value="Maxima">Maxima</option><option value="Titan">Titan</option></optgroup><optgroup label="Jeep"><option value="Wrangler">Wrangler</option><option value="Grand Cherokee">Grand Cherokee</option><option value="Cherokee">Cherokee</option><option value="Compass">Compass</option><option value="Gladiator">Gladiator</option></optgroup><optgroup label="Dodge"><option value="Charger">Charger</option><option value="Challenger">Challenger</option><option value="Durango">Durango</option><option value="Journey">Journey</option></optgroup><optgroup label="Hyundai"><option value="Elantra">Elantra</option><option value="Sonata">Sonata</option><option value="Tucson">Tucson</option><option value="Santa Fe">Santa Fe</option><option value="Palisade">Palisade</option></optgroup><optgroup label="Kia"><option value="Forte">Forte</option><option value="Soul">Soul</option><option value="Sportage">Sportage</option><option value="Sorento">Sorento</option><option value="Telluride">Telluride</option><option value="K5">K5</option></optgroup><optgroup label="Subaru"><option value="Outback">Outback</option><option value="Forester">Forester</option><option value="Crosstrek">Crosstrek</option><option value="Impreza">Impreza</option><option value="WRX">WRX</option><option value="Ascent">Ascent</option></optgroup><optgroup label="Tesla"><option value="Model 3">Model 3</option><option value="Model Y">Model Y</option><option value="Model S">Model S</option><option value="Model X">Model X</option><option value="Cybertruck">Cybertruck</option></optgroup><optgroup label="BMW"><option value="3 Series">3 Series</option><option value="5 Series">5 Series</option><option value="X3">X3</option><option value="X5">X5</option><option value="X1">X1</option></optgroup><optgroup label="Mercedes-Benz"><option value="C-Class">C-Class</option><option value="E-Class">E-Class</option><option value="GLC">GLC</option><option value="GLE">GLE</option></optgroup><optgroup label="Volkswagen"><option value="Jetta">Jetta</option><option value="Golf">Golf</option><option value="Tiguan">Tiguan</option><option value="Atlas">Atlas</option><option value="Passat">Passat</option></optgroup><optgroup label="Ram"><option value="1500">1500</option><option value="2500">2500</option><option value="3500">3500</option></optgroup></select><input id="modelInput" name="modelCustom" placeholder="Model not listed? Type it here" maxlength="80" autocomplete="off" aria-label="Enter model if not listed"></label>
+            <label>DOCUMENT TYPE<select name="type" id="docType"><option value="all">All documents</option><option value="repair">Repair procedures</option><option value="diagnostic">Diagnostic procedures</option><option value="wiring">Wiring diagrams</option><option value="maintenance">Maintenance / service</option><option value="tools">Specialty tools</option><option value="tsb">Technical bulletins</option><option value="recall">Safety recalls</option></select></label>
+          </div>
+          <div class="vehicle-bottom"><div class="query-wrap"><span class="search-ico" aria-hidden="true">⌕</span><input id="queryInput" name="query" type="search" maxlength="120" placeholder="Search by job, fault, system, or document title (optional)"></div><button type="submit" class="button primary search-button">Find information <span>↗</span></button></div>
+          <div class="vin-row"><span class="mini-label">OR LOOK UP BY VIN</span><input id="vinInput" aria-label="17 digit vehicle identification number" maxlength="17" autocomplete="off" placeholder="Enter 17-character VIN"><button class="button thin" type="button" id="decodeVin">Decode VIN ↗</button><span class="vin-note" id="vinMessage" role="status"></span><a class="vin-official" href="https://vpic.nhtsa.dot.gov/decoder/" target="_blank" rel="noopener noreferrer">Official VIN decoder ↗</a></div>
+        </form>
+      </section>
+      <div class="content-area">
+        <div class="alert hidden" id="appAlert" role="alert"><span id="alertText"></span><button type="button" id="alertClose" aria-label="Dismiss alert">×</button></div>
+        <div id="view-library" class="page-view">
+          <div class="panel-intro"><div><div class="section-kicker mini"><span class="kicker-line"></span> SOURCE EXPLORER</div><h2>Repair library <span id="resultCount" class="count-pill">—</span></h2><p id="libraryCaption">Search a vehicle to open OEM sources, your phone library, and public data.</p></div><div class="source-legend"><span class="key-item"><i class="badge-circle teal"></i> Official link</span><span class="key-item"><i class="badge-circle gold"></i> Live government data</span><span class="key-item"><i class="badge-circle slate"></i> Technician entry</span></div></div>
+          <div class="tabs" id="libraryTabs" role="tablist" aria-label="Repair library results"><button class="tab active" data-tab="all" role="tab" aria-selected="true">Overview</button><button class="tab" data-tab="documents" role="tab" aria-selected="false">Procedures</button><button class="tab" data-tab="recalls" role="tab" aria-selected="false">Recalls</button><button class="tab" data-tab="bulletins" role="tab" aria-selected="false">Bulletins</button></div>
+          <div id="libraryResults" aria-live="polite"></div>
+        </div>
+        <div id="view-diagnostics" class="page-view hidden">
+          <div class="panel-intro"><div><div class="section-kicker mini"><span class="kicker-line"></span> FIELD ASSIST</div><h2>Guided diagnostics</h2><p>Simple first-pass fault isolation. Not manufacturer-specific test procedures.</p></div><div class="mini-flag">OBD-II + VISUAL CHECKS</div></div>
+          <div class="diagnostic-layout"><div class="diag-sidebar"><h3>Choose a symptom</h3><div id="symptomList"></div><div class="divider"></div><h3>Look up a DTC</h3><label class="sr-only" for="dtcInput">Diagnostic trouble code</label><div class="dtc-row"><input id="dtcInput" placeholder="P0300" maxlength="6"><button class="button thin" id="dtcButton" type="button">Lookup</button></div><div id="dtcResult" class="dtc-result" aria-live="polite">Enter a generic P-code to see a first check.</div></div><div class="diag-main" id="diagnosticPanel"></div></div>
+        </div>
+        <div id="view-tools" class="page-view hidden">
+          <div class="panel-intro"><div><div class="section-kicker mini"><span class="kicker-line"></span> PRE-JOB PREPARATION</div><h2>Specialty tool requirements</h2><p>Only manufacturer instructions can establish which special tools are required.</p></div></div>
+          <div id="toolsResult"></div>
+        </div>
+        <div id="view-job" class="page-view hidden">
+          <div class="panel-intro"><div><div class="section-kicker mini"><span class="kicker-line"></span> MOBILE WORK ORDER</div><h2>Field service worksheet</h2><p>Record checks, findings and next steps. Stored only in this browser.</p></div><button class="button outline" id="printJob" type="button">⇩ Print / Save PDF</button></div>
+          <div class="job-layout"><div class="surface job-main"><div class="form-title">SERVICE DETAILS</div><div class="job-grid"><label>JOB / CUSTOMER REFERENCE<input id="jobReference" maxlength="100" placeholder="e.g. WO-001 / vehicle nickname"></label><label>ODOMETER<input id="jobOdometer" maxlength="50" placeholder="e.g. 84,220 miles"></label></div><label>REPORTED CONCERN<textarea id="jobConcern" rows="3" placeholder="Customer complaint and conditions when the problem occurs"></textarea></label><label>TESTS & OBSERVATIONS<textarea id="jobObservations" rows="6" placeholder="Measurements, diagnostic codes, visual checks, pass/fail results..."></textarea></label><label>WORK PERFORMED / NEXT ACTION<textarea id="jobNext" rows="5" placeholder="Completed work, additional tests, required follow-up..."></textarea></label><div class="job-actions"><span id="jobSaved" class="muted small">Local draft</span><button type="button" id="clearJob" class="button ghost">Clear worksheet</button><button type="button" id="saveJob" class="button primary">Save locally ✓</button></div></div><aside class="surface job-aside"><div class="form-title">ACTIVE VEHICLE</div><h3 id="jobVehicle">No vehicle selected</h3><p id="jobVehicleSubtitle">Select year, make and model above to associate this worksheet.</p><div class="divider"></div><div class="form-title">BEFORE THE REPAIR</div><ul class="check-list"><li>Confirm VIN, trim and engine.</li><li>Check open recalls by full VIN.</li><li>Read current OEM safety warnings.</li><li>Confirm torque specs and tools.</li><li>Verify post-repair procedures.</li></ul><p class="fineprint">This worksheet is technician-entered; it is not an official repair record.</p></aside></div>
+        </div>
+        <div id="view-import" class="page-view hidden">
+          <div class="panel-intro"><div><div class="section-kicker mini"><span class="kicker-line"></span> SOURCE MANAGEMENT</div><h2>Save a source-linked procedure</h2><p>Build readable, linked job cards from information you are permitted to use.</p></div></div>
+          <div class="import-layout"><form id="importForm" class="surface import-form"><div class="form-title">SOURCE & VEHICLE <span class="required">REQUIRED</span></div><p class="fineprint">Use the selected vehicle from the header. Don't republish paywalled OEM content without permission. Imported cards are technician-entered and not OEM-verified. They remain on this phone.</p><div class="job-grid"><label>Document title<input name="title" maxlength="160" required placeholder="e.g. Front brake caliper — replace"></label><label>Document type<select name="type" required><option value="repair">Repair procedure</option><option value="diagnostic">Diagnostic procedure</option><option value="wiring">Wiring diagram</option><option value="maintenance">Maintenance</option><option value="tools">Specialty tools</option><option value="tsb">Technical bulletin</option></select></label><label>Publisher / source name<input name="sourceTitle" maxlength="180" required placeholder="e.g. Manufacturer service portal"></label><label>Document ID / revision<input name="sourceReference" maxlength="160" required placeholder="OEM doc ID, revision/date or section"></label></div><label>Original source link (HTTPS)<input name="sourceUrl" type="url" required maxlength="1000" placeholder="https://...official-source..."></label><label>Procedure summary / steps <span class="muted">(one per line)</span><textarea name="steps" rows="7" maxlength="25000" required placeholder="Confirm application and safety instructions&#10;Record required pre-conditions&#10;...only information you may use..."></textarea></label><label>Special tools specified by this document <span class="muted">(one per line, include OEM tool IDs if available)</span><textarea name="tools" rows="3" maxlength="6000" placeholder="Tool number — official tool description"></textarea></label><label>Warnings from source <span class="muted">(summarize, do not omit)</span><textarea name="warnings" rows="3" maxlength="2000" placeholder="Hazards, prerequisites, stop-work conditions"></textarea></label><label>Additional context<input name="notes" maxlength="2500" placeholder="Engine/trim applicability, optional tools, publication date"></label><div class="job-actions"><span id="importFeedback" class="fineprint" role="status"></span><button class="button primary" type="submit">Save on this iPhone ✓</button></div></form><aside class="surface import-aside"><div class="form-title">LOCAL DEVICE STORAGE</div><p>Documents are saved <strong>on this iPhone only</strong> using its browser storage; no login, computer or server is needed.</p><div class="info-strip">Your procedures are private to this browser and do not sync to other devices. Back up your library before clearing Safari website data.</div><div class="local-backup"><button id="exportBackup" class="button thin" type="button">Export library backup ↓</button><label class="backup-label">Restore backup <input id="importBackup" type="file" accept=".json,application/json"></label></div><p class="fineprint" id="backupStatus" role="status"></p><p class="fineprint">Do not save OEM portal passwords or private customer records in these public-site notes.</p><div class="divider"></div><h3>Source integrity</h3><ul class="check-list"><li>Identify the real publisher.</li><li>Record document ID and revision.</li><li>Use authorized text only.</li><li>Preserve critical safety details.</li><li>Link back to the full procedure.</li></ul></aside></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <nav class="mobile-bottom-nav" aria-label="Mobile quick navigation">
+    <button type="button" data-view="library" class="active" aria-label="Repair library"><span aria-hidden="true">▤</span><small>Library</small></button>
+    <button type="button" data-view="diagnostics" aria-label="Diagnostics"><span aria-hidden="true">⌁</span><small>Diagnose</small></button>
+    <button type="button" data-view="tools" aria-label="Specialty tools"><span aria-hidden="true">⚒</span><small>Tools</small></button>
+    <button type="button" data-view="job" aria-label="Job worksheet"><span aria-hidden="true">☷</span><small>Worksheet</small></button>
+    <button type="button" data-view="import" aria-label="Add document"><span aria-hidden="true">⊕</span><small>Add doc</small></button>
+  </nav>
+</div>
+<dialog id="installDialog" aria-labelledby="installTitle">
+  <div class="dialog-top"><strong id="installTitle">Add FIELD / OEM to your phone</strong><button type="button" id="closeInstallDialog" class="icon-btn" aria-label="Close install instructions">×</button></div>
+  <p id="installInstructions">For an app-like home screen icon, open the HTTPS website in your phone browser, then choose Add to Home Screen.</p>
+  <div class="install-info"><strong>iPhone / iPad</strong><p>Open the HTTPS website in Safari, tap Share, then choose <b>Add to Home Screen</b>. You may need to scroll down in Share.</p><strong>Android</strong><p>Open the HTTPS website in Chrome. Use the browser menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</p></div>
+  <p class="fineprint">This phone-first version needs no Node.js or PC. Upload its static ZIP to a site host such as Netlify Drop, then install the resulting HTTPS website. Always check live OEM data before any repair.</p>
+  <button type="button" id="installDone" class="button primary">Got it</button>
+</dialog>
+<dialog id="infoDialog"><div class="dialog-top"><strong>How the sources work</strong><button id="closeDialog" class="icon-btn" aria-label="Close information">×</button></div><p><strong>OEM portal:</strong> an official source to open in a new tab. Many manufacturers require their own login and subscription; this site does not bypass those restrictions.</p><p><strong>NHTSA recalls:</strong> public U.S. model-level records when the remote API permits the browser connection. A secure server proxy is needed if cross-site requests are blocked. These are <em>not</em> VIN-specific. Confirm vehicle applicability using the manufacturer's VIN-based system before scheduling work.</p><p><strong>Technician-added cards:</strong> steps and tool lists saved in this iPhone browser with a source URL and document reference. Their contents are <em>not independently verified</em> by this software. Confirm against the current OEM publication.</p><p><strong>Diagnostics:</strong> generic educational fault-isolation guides. They are not a scan tool, do not connect to a vehicle, and cannot replace OEM electrical tests, technical bulletins or safety instructions.</p><button id="dialogDone" class="button primary">Understood</button></dialog>
+  <script>
+'use strict';
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = input => String(input ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  const FALLBACK_PORTAL = {name:'OEM1Stop manufacturer directory',url:'https://oem1stop.com/',note:'Choose the manufacturer and open its current repair-information portal.'};
+  const NH = 'https://www.nhtsa.gov/';
+  const TSB = 'https://data.transportation.gov/stories/s/3pds-7tk9';
+  const NHTSA_DATA = 'https://www.nhtsa.gov/nhtsa-datasets-and-apis#manufacturer-communications';
+  const TITLE = {repair:'Repair procedure', diagnostic:'Diagnostic procedure',wiring:'Wiring diagram',maintenance:'Maintenance',tools:'Special tool reference',tsb:'Technical bulletin'};
+  const state = { makes:[],portals:[],vehicle:null,docs:[],publicDocs:[],recalls:[],recallsError:null,selectedType:'all',tab:'all',view:'library',recallsPending:false,token:0,diagId:'no-crank',node:null,history:[],lastFinding:'' };
+
+  // v1.2: browser-only version. There is no backend and no need to leave a PC running.
+  // Every external live request targets an official NHTSA endpoint; CORS availability is outside our control.
+  const STATIC_DATA = {"makes":["Acura","Alfa Romeo","Audi","BMW","Buick","Cadillac","Chevrolet","Chrysler","Dodge","Fiat","Ford","GMC","Genesis","Honda","Hyundai","Infiniti","Jeep","Kia","Land Rover","Lexus","Lincoln","Mazda","Mercedes-Benz","Mini","Mitsubishi","Nissan","Porsche","Ram","Scion","Subaru","Tesla","Toyota","Volkswagen","Volvo"],"portals":[{"name":"Ford / Lincoln","makes":["Ford","Lincoln"],"url":"https://www.motorcraftservice.com/","note":"Ford Motorcraft service information; sign-in/subscription may be needed."},{"name":"GM / ACDelco TDS","makes":["Chevrolet","GMC","Buick","Cadillac"],"url":"https://www.acdelcotds.com/","note":"GM repair manuals, service bulletins and programming subscriptions."},{"name":"Toyota / Lexus TIS","makes":["Toyota","Lexus","Scion"],"url":"https://techinfo.toyota.com/","note":"Toyota Technical Information System repair and electrical manuals."},{"name":"Honda / Acura SIS","makes":["Honda","Acura"],"url":"https://techinfo.honda.com/","note":"Honda Service Information System, service and troubleshooting information."},{"name":"Nissan / INFINITI TechInfo","makes":["Nissan","Infiniti"],"url":"https://www.nissan-techinfo.com/","note":"Factory manuals and TSBs; subscription for service publication viewing."},{"name":"Kia KGIS","makes":["Kia"],"url":"https://kiatechinfo.snapon.com/Default.aspx","note":"Kia U.S. service manuals, bulletins and specialty tool information."},{"name":"Hyundai TechInfo","makes":["Hyundai"],"url":"https://www.hyundaitechinfo.com/","note":"Hyundai U.S. shop manuals, electrical troubleshooting manuals, technical bulletins and tools."},{"name":"Subaru TechShare","makes":["Subaru"],"url":"https://subarutechshare.com/","note":"Subaru service publications and diagnostics; access depends on account and subscription."},{"name":"Mazda Service Info","makes":["Mazda"],"url":"https://www.mazdaserviceinfo.com/","note":"Mazda North American workshop manuals, wiring diagrams and bulletins; subscription required."},{"name":"Volkswagen erWin (U.S.)","makes":["Volkswagen"],"url":"https://vw-us.erwin-store.com/erwin/showHome.do","note":"Volkswagen U.S. service manuals, electrical diagrams and technical information."},{"name":"Audi erWin (U.S.)","makes":["Audi"],"url":"https://audi-us.erwin-store.com/erwin/showHome.do","note":"Audi U.S. manufacturer repair information, wiring diagrams and bulletins."},{"name":"BMW Technical Information System","makes":["BMW"],"url":"https://bmwtechinfo.bmwgroup.com/","note":"BMW TIS/AOS: factory repair information via AIR/ISTA; subscription required."},{"name":"MINI Technical Information System","makes":["Mini"],"url":"https://minitechinfo.bmwgroup.com/","note":"MINI TIS/AOS factory diagnostic and repair information; subscription required."},{"name":"Volvo Tech Info (North America)","makes":["Volvo"],"url":"https://volvotechinfo.com/vida","note":"Volvo VIDA factory vehicle repair and diagnostic information for North American vehicles."},{"name":"Tesla Service","makes":["Tesla"],"url":"https://service.tesla.com/","note":"Tesla published service manuals, diagrams and mobile service indicators."},{"name":"OEM1Stop Directory","makes":[],"url":"https://oem1stop.com/","note":"OEM manufacturer repair-information directory; choose your automaker to continue."}],"publicDocs":[{"make":"Tesla","model":"Model 3","from":2017,"to":2023,"type":"maintenance","title":"Maintenance Service Intervals","description":"Official maintenance reference; this page points to the relevant Tesla Owner’s Manual intervals.","source":"Tesla Service Manual","url":"https://service.tesla.com/docs/Model3/ServiceManual/en-us/GUID-3B6C3188-FB14-4F8F-B618-E0894D4B3200.html","indexedAt":"2026-11-06","reference":"3B6C3188-FB14-4F8F-B618-E0894D4B3200"},{"make":"Tesla","model":"Model 3","from":2017,"to":2023,"type":"maintenance","title":"Basic Vehicle Inspection","description":"Manufacturer inspection checklist; use the publication for all checks and exceptions.","source":"Tesla Service Manual","url":"https://service.tesla.com/docs/Model3/ServiceManual/en-us/GUID-C24C6004-94BF-4099-8681-8D6598EE6E50.html","indexedAt":"2026-11-06","reference":"C24C6004-94BF-4099-8681-8D6598EE6E50"},{"make":"Tesla","model":"Model 3","from":2017,"to":2023,"type":"diagnostic","title":"On-Board Diagnostics (OBD) Connector","description":"Manufacturer service information concerning the on-board diagnostic connector.","source":"Tesla Service Manual","url":"https://service.tesla.com/docs/Model3/ServiceManual/en-us/GUID-79B765C9-662A-45EE-88C9-4D34EBC4C947.html","indexedAt":"2026-11-06","reference":"79B765C9-662A-45EE-88C9-4D34EBC4C947"},{"make":"Tesla","model":"Model 3","from":2017,"to":2023,"type":"repair","title":"Raise Vehicle — Floor Jack (Mobile Service)","description":"Safety-critical: this manufacturer lifting subprocedure must ONLY be used when another procedure references it. Read all lifting warnings and equipment requirements before work.","source":"Tesla Service Manual","url":"https://service.tesla.com/docs/Model3/ServiceManual/en-us/GUID-98FDEEC3-CFF0-4D8B-92D6-461FA26BD698.html","indexedAt":"2026-11-06","reference":"98FDEEC3-CFF0-4D8B-92D6-461FA26BD698"},{"make":"Tesla","model":"Model Y","from":2020,"to":2024,"type":"maintenance","title":"Maintenance Service Intervals","description":"Official maintenance reference; this page points to the relevant Tesla Owner’s Manual intervals.","source":"Tesla Service Manual","url":"https://service.tesla.com/docs/ModelY/ServiceManual/en-us/GUID-3B6C3188-FB14-4F8F-B618-E0894D4B3200.html","indexedAt":"2026-11-06","reference":"3B6C3188-FB14-4F8F-B618-E0894D4B3200"},{"make":"Tesla","model":"Model Y","from":2020,"to":2024,"type":"maintenance","title":"Basic Vehicle Inspection","description":"Manufacturer inspection checklist; use the publication for all checks and exceptions.","source":"Tesla Service Manual","url":"https://service.tesla.com/docs/ModelY/ServiceManual/en-us/GUID-2CA65DC3-FF65-4E9A-8A10-E4475771B43E.html","indexedAt":"2026-11-06","reference":"2CA65DC3-FF65-4E9A-8A10-E4475771B43E"},{"make":"Tesla","model":"Model Y","from":2020,"to":2024,"type":"diagnostic","title":"On-Board Diagnostics (OBD) Connector","description":"Manufacturer service information concerning the on-board diagnostic connector.","source":"Tesla Service Manual","url":"https://service.tesla.com/docs/ModelY/ServiceManual/en-us/GUID-79B765C9-662A-45EE-88C9-4D34EBC4C947.html","indexedAt":"2026-11-06","reference":"79B765C9-662A-45EE-88C9-4D34EBC4C947"},{"make":"Tesla","model":"Model Y","from":2020,"to":2024,"type":"repair","title":"Raise Vehicle — Floor Jack (Mobile Service)","description":"Safety-critical: this manufacturer lifting subprocedure must ONLY be used when another procedure references it. Read all lifting warnings and equipment requirements before work.","source":"Tesla Service Manual","url":"https://service.tesla.com/docs/ModelY/ServiceManual/en-us/GUID-98FDEEC3-CFF0-4D8B-92D6-461FA26BD698.html","indexedAt":"2026-11-06","reference":"98FDEEC3-CFF0-4D8B-92D6-461FA26BD698"}]};
+  const LOCAL_PROCEDURES_KEY = 'field-oem-v1.2-procedures';
+  const COMMON_MODELS = {
+    Ford:['F-150','F-250','Escape','Explorer','Expedition','Focus','Fusion','Mustang','Taurus','Edge','Ranger','Bronco'],
+    Chevrolet:['Silverado 1500','Equinox','Malibu','Tahoe','Suburban','Traverse','Colorado','Camaro','Corvette'],
+    Toyota:['Camry','Corolla','RAV4','Tacoma','Tundra','Highlander','4Runner','Prius','Sienna'],
+    Honda:['Civic','Accord','CR-V','Pilot','Odyssey','HR-V','Ridgeline'],
+    Nissan:['Altima','Sentra','Rogue','Frontier','Pathfinder','Murano','Maxima','Titan'],
+    Jeep:['Wrangler','Grand Cherokee','Cherokee','Compass','Gladiator'],
+    Dodge:['Charger','Challenger','Durango','Journey'],
+    Hyundai:['Elantra','Sonata','Tucson','Santa Fe','Palisade'],
+    Kia:['Forte','Soul','Sportage','Sorento','Telluride','K5'],
+    Subaru:['Outback','Forester','Crosstrek','Impreza','WRX','Ascent'],
+    Tesla:['Model 3','Model Y','Model S','Model X','Cybertruck'],
+    BMW:['3 Series','5 Series','X3','X5','X1'],
+    'Mercedes-Benz':['C-Class','E-Class','GLC','GLE'],
+    Volkswagen:['Jetta','Golf','Tiguan','Atlas','Passat'],
+    Ram:['1500','2500','3500']
+  };
+  function savedProcedures() {
+    try {const x=JSON.parse(localStorage.getItem(LOCAL_PROCEDURES_KEY)||'[]');return Array.isArray(x)?x:[];}
+    catch {return [];}
+  }
+  function writeProcedures(items) {
+    try {localStorage.setItem(LOCAL_PROCEDURES_KEY,JSON.stringify(items));return true;}
+    catch {throw new Error('This device cannot save more local data. Export a backup and free up storage.');}
+  }
+  function normalizeRecallData(raw) {
+    const rows=Array.isArray(raw?.results)?raw.results:Array.isArray(raw?.Results)?raw.Results:[];
+    return rows.slice(0,100).map(r=>({
+      campaign:String(r.NHTSACampaignNumber||r.NhtsaCampaignNumber||'').slice(0,40),
+      component:String(r.Component||'').slice(0,200),
+      summary:String(r.Summary||'').slice(0,4000),
+      consequence:String(r.Consequence||'').slice(0,2500),
+      remedy:String(r.Remedy||'').slice(0,2500),
+      reportDate:String(r.ReportReceivedDate||'').slice(0,40)
+    }));
+  }
+  async function governmentJSON(url) {
+    if(!navigator.onLine)throw new Error('You are offline. Open the official NHTSA website when you have a connection.');
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),10000);
+    try {
+      const r=await fetch(url,{mode:'cors',credentials:'omit',signal:controller.signal,headers:{Accept:'application/json'}});
+      if(!r.ok)throw new Error('NHTSA returned HTTP '+r.status);
+      return await r.json();
+    } catch(e) {
+      throw new Error('Live NHTSA data cannot be displayed in this browser right now (network, API limits or cross-site restrictions). Open the official NHTSA link instead.');
+    } finally {clearTimeout(timer);}
+  }
+  async function api(url, options={}) {
+    const u=new URL(url,'https://field-oem.invalid'); const p=u.pathname;
+    if(p==='/api/catalog')return {makes:STATIC_DATA.makes,portals:STATIC_DATA.portals};
+    if(p==='/api/public-documents') {
+      const year=Number(u.searchParams.get('year')),make=(u.searchParams.get('make')||'').toLowerCase().trim(),model=(u.searchParams.get('model')||'').toLowerCase().trim();
+      return {results:STATIC_DATA.publicDocs.filter(d=>d.make.toLowerCase()===make&&d.model.toLowerCase()===model&&year>=d.from&&year<=d.to)};
+    }
+    if(p==='/api/procedures') {
+      if(options.method==='POST') {
+        const x=JSON.parse(options.body||'{}');
+        const vals=['year','make','model','title','type','sourceTitle','sourceReference','sourceUrl','steps'];
+        if(vals.some(key=>!x[key]) || !Array.isArray(x.steps) || !x.steps.length)throw new Error('Fill in the required procedure and source fields.');
+        let parsed;
+        try{parsed=new URL(x.sourceUrl);}
+        catch{throw new Error('Enter a valid HTTPS source URL.');}
+        if(parsed.protocol!=='https:' || parsed.username||parsed.password || !parsed.hostname.includes('.'))throw new Error('Use a valid public HTTPS manufacturer source link.');
+        if(!['repair','diagnostic','wiring','maintenance','tools','tsb'].includes(x.type))throw new Error('Document type is invalid.');
+        const clean=(v,max)=>String(v||'').trim().slice(0,max);
+        const item={id:'local-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),year:Number(x.year),make:clean(x.make,60),model:clean(x.model,80),title:clean(x.title,160),type:x.type,sourceTitle:clean(x.sourceTitle,180),sourceReference:clean(x.sourceReference,160),sourceUrl:parsed.href,steps:x.steps.map(s=>clean(s,500)).filter(Boolean).slice(0,50),tools:(x.tools||[]).map(s=>clean(s,150)).filter(Boolean).slice(0,40),warnings:clean(x.warnings,2000),notes:clean(x.notes,2500),provenance:'Saved locally by technician · source not independently verified',createdAt:new Date().toISOString()};
+        const stored=savedProcedures();if(stored.length>=250)throw new Error('Local library limit is 250 documents. Export backup before clearing old entries.');
+        stored.unshift(item);writeProcedures(stored);return {item};
+      }
+      const make=(u.searchParams.get('make')||'').toLowerCase(),model=(u.searchParams.get('model')||'').toLowerCase(),year=Number(u.searchParams.get('year'));
+      const q=(u.searchParams.get('q')||'').toLowerCase();
+      return {results:savedProcedures().filter(d=>d.make.toLowerCase()===make&&d.model.toLowerCase()===model&&d.year===year&&(!q||[d.title,d.notes,d.sourceReference,(d.steps||[]).join(' '),(d.tools||[]).join(' ')].join(' ').toLowerCase().includes(q)))};
+    }
+    if(p==='/api/models') {
+      const make=u.searchParams.get('make')||'', year=u.searchParams.get('year');
+      const fallback=COMMON_MODELS[make]||[];
+      try {
+        const upstream=await governmentJSON('https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear/make/'+encodeURIComponent(make)+'/modelyear/'+encodeURIComponent(year)+'?format=json');
+        const vals=(upstream.Results||[]).map(x=>x.Model).filter(Boolean);
+        return {models:[...new Set([...fallback,...vals])].sort((a,b)=>a.localeCompare(b))};
+      }catch{return {models:fallback};}
+    }
+    if(p==='/api/vin') {
+      const vin=(u.searchParams.get('vin')||'').toUpperCase();
+      if(!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin))throw new Error('Enter a valid 17-character VIN.');
+      const upstream=await governmentJSON('https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/'+encodeURIComponent(vin)+'?format=json');
+      const d=upstream.Results?.[0]||{};
+      return {make:d.Make||'',model:d.Model||'',year:d.ModelYear||'',trim:d.Trim||'',errors:d.ErrorText||''};
+    }
+    if(p==='/api/recalls') {
+      const make=u.searchParams.get('make'),model=u.searchParams.get('model'),year=u.searchParams.get('year');
+      const upstream=await governmentJSON('https://api.nhtsa.gov/recalls/recallsByVehicle?make='+encodeURIComponent(make)+'&model='+encodeURIComponent(model)+'&modelYear='+encodeURIComponent(year));
+      return {results:normalizeRecallData(upstream)};
+    }
+    throw new Error('Unknown static-app operation');
+  }
+  function alertMsg(message) { $('alertText').textContent=message; $('appAlert').classList.remove('hidden'); }
+  function show(view) {
+    state.view=view;
+    document.body.classList.toggle('compact-selector',view!=='library');
+    document.querySelectorAll('.page-view').forEach(x=>x.classList.toggle('hidden',x.id!==`view-${view}`));
+    document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+    const name={library:'Repair library',diagnostics:'Guided diagnostics',tools:'Specialty tools',job:'Job worksheet',import:'Add source document'}[view];
+    $('crumbTitle').textContent=name;
+    $('sidebar').classList.remove('open');$('menuToggle').setAttribute('aria-expanded','false');
+    document.querySelectorAll('.mobile-bottom-nav [data-view]').forEach(b=>b.setAttribute('aria-current',b.dataset.view===view?'page':'false'));
+    if(window.innerWidth<851) window.scrollTo({top:0,behavior:'auto'});
+    if(view==='tools') renderTools();
+    if(view==='job') renderJob();
+    if(view==='diagnostics') renderDiagnosis();
+  }
+  function yearOptions(){
+    const y=$('yearSelect');
+    y.innerHTML='<option value="">Select year</option>';
+    const now=new Date().getFullYear();
+    for(let i=now+1;i>=1981;i--){const o=document.createElement('option');o.value=i;o.textContent=i;y.append(o);}
+  }
+  function populateMakes(){
+    const el=$('makeSelect');const before=el.value;
+    el.innerHTML='<option value="">Select make</option>';
+    for(const make of state.makes){const opt=document.createElement('option');opt.textContent=make;opt.value=make;el.append(opt);}
+    el.value=before;
+  }
+  function setModelChoices(choices, requested='') {
+    const sel=$('modelSelect');
+    const unique=[...new Set(choices.map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    sel.replaceChildren();
+    const first=document.createElement('option');first.value='';first.textContent=unique.length?'Select model':'No suggestions — type model below';sel.append(first);
+    for(const model of unique){const option=document.createElement('option');option.value=model;option.textContent=model;sel.append(option);}
+    const found=unique.find(m=>m.toLowerCase()===requested.trim().toLowerCase());
+    if(found){sel.value=found;$('modelInput').value='';}
+    else if(requested){sel.value='';$('modelInput').value=requested;}
+    else sel.value='';
+  }
+  async function models(requestedModel=''){
+    const make=$('makeSelect').value, year=$('yearSelect').value;
+    const current=typeof requestedModel==='string'&&requestedModel?requestedModel:($('modelInput').value.trim()||$('modelSelect').value);
+    const local=COMMON_MODELS[make]||[];
+    // A real native SELECT works in iOS Safari. No datalist reliance.
+    setModelChoices(local,current);
+    if(!make||!year)return;
+    try {
+      const {models:choices}=await api(`/api/models?make=${encodeURIComponent(make)}&year=${encodeURIComponent(year)}`);
+      if(make!==$('makeSelect').value||year!==$('yearSelect').value)return;
+      // Don't overwrite anything chosen or typed while the request was running.
+      const latest=$('modelInput').value.trim()||$('modelSelect').value;
+      setModelChoices([...(local||[]),...(choices||[])],latest);
+    }catch { /* The manual input remains available if NHTSA is blocked on iOS. */ }
+  }
+  function portal() {
+    const make=(state.vehicle?.make||'').toLowerCase();
+    return state.portals.find(p=>p.makes.some(m=>m.toLowerCase()===make)) || FALLBACK_PORTAL;
+  }
+  function vehicleText(){ const v=state.vehicle;return v?`${v.year} ${v.make} ${v.model}`:'a vehicle'; }
+  function blockLink(url,label){
+    const link=String(url||'');
+    if(!/^https:\/\/[a-z0-9.-]+(?::443)?(?:\/|$)/i.test(link))return '';
+    return `<a class="link-btn" href="${esc(link)}" target="_blank" rel="noopener noreferrer">${esc(label)} <span aria-hidden="true">↗</span></a>`;
+  }
+  function directManualLink(){
+    const v=state.vehicle;
+    if(!v||v.make.toLowerCase()!=='tesla')return '';
+    const year=Number(v.year), model=v.model.trim().toLowerCase();
+    if(model==='model 3'&&year>=2017&&year<=2023) return '<div class="quick-links"><a href="https://service.tesla.com/docs/Model3/ServiceManual/en-us/" target="_blank" rel="noopener noreferrer">Open 2017–2023 Model 3 service manual ↗</a></div>';
+    if(model==='model y'&&year>=2020&&year<=2024) return '<div class="quick-links"><a href="https://service.tesla.com/docs/ModelY/ServiceManual/en-us/index.html" target="_blank" rel="noopener noreferrer">Open 2020–2024 Model Y service manual ↗</a></div>';
+    return '';
+  }
+  function portalCard(){
+    const p=portal();
+    const type=state.selectedType;
+    const wording={repair:'factory service procedure',wiring:'OEM wiring diagram',diagnostic:'factory diagnostic test',maintenance:'maintenance service instructions',tools:'OEM special service tool requirements',tsb:'technical service bulletin'}[type]||'factory repair documents';
+    return `<article class="result-card"><div class="result-icon">▤</div><div class="result-details"><div class="result-meta"><span class="pill">OFFICIAL MANUFACTURER PORTAL</span><span class="tiny-meta">Publisher website · external access</span></div><h3>${esc(p.name)}</h3><p>Open the publisher to locate the ${esc(wording)} for <strong>${esc(vehicleText())}</strong>. ${esc(p.note)} This card is a source destination, not a claim that a specific procedure was retrieved.</p>${directManualLink()}</div><div class="result-actions">${blockLink(p.url,'Open OEM source')}</div></article>`;
+  }
+  function publicDocCard(doc){
+    return `<article class="result-card"><div class="result-icon">↗</div><div class="result-details"><div class="result-meta"><span class="pill">PUBLIC OEM DOCUMENT</span><span class="tiny-meta">${esc(TITLE[doc.type]||doc.type)} · Indexed ${esc(doc.indexedAt)}</span></div><h3>${esc(doc.title)}</h3><p>${esc(doc.description)}</p><p class="fineprint">Original publisher: ${esc(doc.source)}. Confirm VIN, production revision, tools and current safety instructions at the source. This site does not reproduce the factory procedure.</p></div><div class="result-actions">${blockLink(doc.url,'Read manufacturer document')}</div></article>`;
+  }
+  function filteredPublicDocs(){
+    const q=$('queryInput').value.trim().toLowerCase(),type=state.selectedType;
+    return state.publicDocs.filter(d=>(type==='all'||type===d.type)&&(!q||[d.title,d.description,d.reference].join(' ').toLowerCase().includes(q)));
+  }
+  function docCard(doc){
+    const detailId=`doc-${esc(doc.id)}`;
+    return `<article class="result-card"><div class="result-icon slate">☷</div><div class="result-details"><div class="result-meta"><span class="pill slate">TECHNICIAN-ENTERED</span><span class="tiny-meta">${esc(TITLE[doc.type]||doc.type)} · ${esc(doc.sourceReference)}</span></div><h3>${esc(doc.title)}</h3><p>Based on source: ${esc(doc.sourceTitle)}. ${esc(doc.provenance||'Content not independently verified')}.</p><details id="${detailId}" class="expand-details"><summary>Read simplified steps, tools and warnings</summary>${doc.warnings?`<div class="doc-warning">⚠ ${esc(doc.warnings)}</div>`:''}<ol class="document-steps">${doc.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>${doc.tools.length?`<h4 style="font-size:12px;margin:13px 0 3px">Tools recorded from source</h4><div class="doc-tools">${doc.tools.map(t=>`<span class="tool-chip">${esc(t)}</span>`).join('')}</div>`:'<p>No specialty tools recorded. Check the OEM source for complete tool requirements.</p>'}${doc.notes?`<div class="example-block"><p>${esc(doc.notes)}</p></div>`:''}<p class="fineprint">Verify current model applicability, hazards, special tools and torque values in the source before beginning.</p></details></div><div class="result-actions">${blockLink(doc.sourceUrl,'Original source')}<button class="button thin" type="button" data-delete-doc="${esc(doc.id)}">Remove local card</button></div></article>`;
+  }
+  function recallCard(r){
+    const date=r.reportDate?new Date(r.reportDate):null;
+    const dateText=date&& !Number.isNaN(date.getTime()) ? date.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : r.reportDate||'Date unspecified';
+    return `<article class="result-card"><div class="result-icon amber">!</div><div class="result-details"><div class="result-meta"><span class="pill gold">NHTSA SAFETY RECALL</span><span class="tiny-meta">Official model-level record</span></div><h3>${esc(r.component||'Safety recall')}</h3><div class="recall-meta"><span>Campaign <strong>${esc(r.campaign||'Unavailable')}</strong></span><span>Reported ${esc(dateText)}</span></div><div class="recall-preview"><p><b>Summary:</b> ${esc(r.summary||'See original recall information.')}</p></div><details class="expand-details"><summary>Consequence, remedy & applicability notes</summary><div class="recall-preview"><p><b>Consequence:</b> ${esc(r.consequence||'Not provided')}</p><p><b>Manufacturer remedy:</b> ${esc(r.remedy||'Not provided')}</p></div><div class="warning-strip">A model-level recall match does not prove this VIN is affected. Confirm through a VIN-specific recall check or the OEM.</div></details></div><div class="result-actions">${blockLink(NH+'recalls','Check by VIN')}</div></article>`;
+  }
+  function bulletinCard(){return `<article class="result-card"><div class="result-icon">≡</div><div class="result-details"><div class="result-meta"><span class="pill">PUBLIC MANUFACTURER COMMUNICATIONS</span><span class="tiny-meta">NHTSA directory · external lookup</span></div><h3>Search the manufacturer's service bulletins</h3><p>NHTSA publishes manufacturer bulletins and communications, with a searchable public dashboard and downloadable datasets. Use the selected year, make, model and fault terms on the publisher page. This version does not automatically index bulletin documents, so no vehicle-specific TSB match is implied.</p><div class="quick-links"><a href="${TSB}" target="_blank" rel="noopener noreferrer">NHTSA communications dashboard ↗</a><a href="${NHTSA_DATA}" target="_blank" rel="noopener noreferrer">Public data downloads ↗</a></div></div></article>`;}
+  function noDocs(){ return `<div class="empty-card"><div class="empty-symbol">⌕</div><h3>No imported procedure matches this search</h3><p>For ${esc(vehicleText())}, open the manufacturer portal above to access the original publication. To view simplified steps here, you can save a source-linked summary on this phone.</p><button class="button thin" type="button" data-go="import">Add a source-linked document ↗</button></div>`; }
+  function overview(){
+    if(!state.vehicle)return `<div class="two-col"><div class="feature-card"><div class="section-kicker mini"><span class="kicker-line"></span> QUICK START</div><h3 style="font-size:19px;margin-top:13px">A single workspace for every service call.</h3><p>Choose a model year, make and model, then search. You'll get the manufacturer portal, public recall information and any locally saved, source-linked procedures.</p><div class="quick-links"><button class="button primary" type="button" id="sampleVehicle">Try 2017 Ford Taurus ↗</button></div></div><div class="feature-card"><div class="section-kicker mini"><span class="kicker-line"></span> WORKFLOW</div><h3 style="margin-top:13px">Identify → Verify → Repair</h3><p>Use OEM instructions for safety-critical work and special tools. Use built-in generic diagnostics for first-pass checks and the job worksheet to document findings.</p><div class="quick-links"><button class="button thin" type="button" data-go="diagnostics">Open diagnostics ↗</button></div></div></div>`;
+    const docs=filteredDocs();
+    const count=state.recalls?.length||0;
+    const panels=[portalCard()];
+    const publicDocs=filteredPublicDocs();
+    if(publicDocs.length)panels.push(...publicDocs.map(publicDocCard));
+    if(docs.length)panels.push(...docs.slice(0,4).map(docCard));
+    else if(!publicDocs.length) panels.push(`<article class="feature-card"><h3>Factory repair procedures</h3><p>No source-linked procedures have been added for this vehicle${state.selectedType!=='all'?' and document type':''}. The OEM portal is the authoritative source for repair steps, specifications, and required specialty tools.</p><div class="quick-links"><button type="button" class="button thin" data-switch-tab="documents">Browse procedures ↗</button><button type="button" class="button thin" data-go="import">Add sourced steps ↗</button></div></article>`);
+    if(state.recallsError)panels.push(`<div class="warning-strip">⚠ Live recall lookup: ${esc(state.recallsError)} <a href="${NH}recalls" target="_blank" rel="noopener noreferrer">Check NHTSA ↗</a></div>`);
+    else if(state.recallsPending)panels.push(`<article class="feature-card"><div class="result-meta"><span class="pill gold">NHTSA RECALL LOOKUP</span></div><h3>Checking recall records…</h3><p>The repair portal and any available source-linked documents are ready above. You can open them while the government lookup finishes.</p><div class="quick-links">${blockLink(NH+'recalls','Check by VIN on NHTSA')}</div></article>`);
+    else panels.push(`<article class="feature-card"><div class="result-meta"><span class="pill gold">NHTSA RECALL LOOKUP</span></div><h3>${count} model-level recall record${count!==1?'s':''} returned</h3><p>${count?'The selected vehicle has public model-level campaign records. Individual VIN applicability is not determined here.':'No records were returned for the selected year/make/model. A VIN lookup is still recommended.'}</p><div class="quick-links"><button class="button thin" data-switch-tab="recalls" type="button">View recall details ↗</button><a href="${NH}recalls" target="_blank" rel="noopener noreferrer">Verify by VIN ↗</a></div></article>`);
+    panels.push(bulletinCard());
+    return `<div class="results-stack">${panels.join('')}</div>`;
+  }
+  function filteredDocs(){
+    const q=$('queryInput').value.trim().toLowerCase(), t=state.selectedType;
+    return state.docs.filter(d=>(t==='all'||t===d.type)&&(!q||[d.title,d.notes,d.sourceReference,(d.tools||[]).join(' '),(d.steps||[]).join(' ')].join(' ').toLowerCase().includes(q)));
+  }
+  function renderLibrary(){
+    const tab=state.tab, v=state.vehicle, host=$('libraryResults');
+    const map={all:'Overview',documents:'Procedures',recalls:'Recalls',bulletins:'Bulletins'};
+    document.querySelectorAll('[data-tab]').forEach(x=>{const active=x.dataset.tab===tab;x.classList.toggle('active',active);x.setAttribute('aria-selected',String(active));});
+    $('resultCount').textContent=v?String(state.docs.length + state.publicDocs.length + state.recalls.length + 2):'—';
+    $('libraryCaption').textContent=v?`${vehicleText()}  •  ${map[tab]}  •  model/year-level sources`:'Search a vehicle above to access its sources and available records.';
+    if(!v) {host.innerHTML=overview();return;}
+    if(tab==='all'){host.innerHTML=overview();return;}
+    if(tab==='documents'){
+      const docs=filteredDocs().filter(d=>d.type!=='tsb');
+      const publicDocs=filteredPublicDocs().filter(d=>d.type!=='tsb');
+      host.innerHTML=`<div class="results-stack">${portalCard()}${publicDocs.map(publicDocCard).join('')}${docs.length?docs.map(docCard).join(''):publicDocs.length?'':noDocs()}</div>`;
+    }
+    if(tab==='recalls'){
+      host.innerHTML=`<div class="results-stack"><div class="warning-strip">⚠ <div><b>VIN verification required.</b> These NHTSA results apply to the model family, not necessarily your specific vehicle. Check the VIN with the manufacturer before acting.</div></div>${state.recallsPending?`<div class="feature-card"><h3>Checking official recall records…</h3><p>Other tabs and OEM source links are ready to use now.</p>${blockLink(NH+'recalls','Check by VIN')}</div>`:state.recallsError?`<div class="feature-card"><h3>Live recall data unavailable</h3><p>${esc(state.recallsError)}</p>${blockLink(NH+'recalls','Open official recall checker')}</div>`:state.recalls.length?state.recalls.map(recallCard).join(''):`<div class="empty-card"><div class="empty-symbol">✓</div><h3>No model-level recalls returned</h3><p>Live lookup returned no matching campaigns. This does not confirm that this individual VIN has no open recalls.</p>${blockLink(NH+'recalls','Check VIN on NHTSA')}</div>`}</div>`;
+    }
+    if(tab==='bulletins'){
+      const docs=state.docs.filter(d=>d.type==='tsb');
+      host.innerHTML=`<div class="results-stack">${bulletinCard()}${docs.map(docCard).join('')}${docs.length?'':'<div class="info-strip">No locally saved TSBs are available for this vehicle. Open the public bulletin dashboard or OEM portal to search the original records.</div>'}</div>`;
+    }
+  }
+  async function search(event){
+    event?.preventDefault();
+    const year=$('yearSelect').value,make=$('makeSelect').value,model=($('modelInput').value.trim()||$('modelSelect').value.trim()),type=$('docType').value;
+    if(!year||!make||!model){alertMsg('Choose a model year, make, and model. If your model is not listed, type it in the box below.');return;}
+    const token=++state.token;
+    try{localStorage.setItem('field-oem-last-vehicle',JSON.stringify({year,make,model,type}));}catch{}
+    state.vehicle={year,make,model};state.docs=[];state.publicDocs=[];state.recalls=[];state.recallsError=null;state.recallsPending=true;state.selectedType=type;
+    state.tab=type==='recall'?'recalls':type==='tsb'?'bulletins':'all';
+    show('library');
+    // Provide the official manufacturer portal IMMEDIATELY, even if the NHTSA API hangs on cellular data.
+    renderLibrary();renderJob();
+    const common=`make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&year=${encodeURIComponent(year)}`;
+    // Both of these requests are local in this static app; no network connection required.
+    const [docs, publicDocs]=await Promise.allSettled([
+      api(`/api/procedures?${common}`),api(`/api/public-documents?${common}`)
+    ]);
+    if(token!==state.token)return;
+    if(publicDocs.status==='fulfilled')state.publicDocs=publicDocs.value.results;
+    if(docs.status==='fulfilled')state.docs=docs.value.results;
+    else alertMsg(`Source-linked library unavailable: ${docs.reason.message}`);
+    renderLibrary();
+    // This optional network request happens AFTER the primary results have rendered.
+    // It will never stop the Search button or the bottom navigation from working.
+    try{
+      const response=await api(`/api/recalls?${common}`);
+      if(token!==state.token)return;
+      state.recalls=response.results;
+    }catch(error){
+      if(token!==state.token)return;
+      state.recallsError=error.message;
+    }finally{
+      if(token===state.token){state.recallsPending=false;renderLibrary();}
+    }
+  }
+  async function decodeVin(){
+    const vin=$('vinInput').value.toUpperCase().replace(/\s/g,'');
+    const el=$('vinMessage');
+    if(!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)){el.textContent='Use 17 characters; I, O and Q are not allowed.';return;}
+    el.textContent='Decoding…';$('decodeVin').disabled=true;
+    try{
+      const d=await api(`/api/vin?vin=${encodeURIComponent(vin)}`);
+      if(!d.make||!d.model||!/^[12]\d{3}$/.test(d.year||''))throw new Error(d.errors||'VIN decoder did not return complete vehicle details.');
+      const make=state.makes.find(m=>m.toLowerCase()===d.make.toLowerCase());
+      if(make)$('makeSelect').value=make;
+      else {const opt=document.createElement('option');opt.value=d.make;opt.textContent=d.make;$('makeSelect').append(opt);$('makeSelect').value=d.make;}
+      $('yearSelect').value=d.year;
+      $('modelInput').value=d.model;
+      $('modelSelect').value='';
+      el.textContent=`Filled ${d.year} ${d.make} ${d.model}${d.trim?', '+d.trim:''}. Verify engine and trim.`;
+      models(d.model);
+    }catch(e){el.textContent=e.message;}
+    finally{$('decodeVin').disabled=false;}
+  }
+  const FLOWS={
+    'no-crank':{title:'Engine does not crank',sub:'Key/start pressed but starter does not turn the engine.',tools:['12 V battery tester or DVOM','OBD-II scan tool when available'],warning:'Do not bypass starting interlocks or work around exposed high-voltage components.',start:'a',nodes:{
+      a:{q:'Do the dash and interior lamps illuminate normally?',hint:'Observe without disassembling. If dark or unusually dim, check battery condition and accessible connections.',yes:'b',no:'power'},
+      b:{q:'Is a click or starter engagement heard when START is requested?',hint:'Confirm correct shift position or clutch/park input, without defeating safety interlocks.',yes:'c',no:'command'},
+      c:{q:'Does the engine rotate slowly, or do the lights dim heavily?',hint:'A weak battery or high-resistance power/ground may cause slow cranking even if lamps work.',yes:'slow',no:'starter'},
+      power:{end:'Start with the 12 V power supply',detail:'Possible discharged battery, poor terminal connection or main power feed concern. Check for visible corrosion or loose accessible connections. Have battery state and voltage drop tested using the OEM specifications.'},
+      command:{end:'Investigate the start-request circuit',detail:'Possible start authorization, starter relay, park/neutral signal or ignition switch input. Read relevant module DTCs and follow the vehicle-specific OEM starting-system diagnostic chart.'},
+      slow:{end:'Inspect battery capacity and power/ground path',detail:'Possible battery deterioration, poor cable connection, high voltage drop or mechanical load. Record measured battery and crank-test readings before replacing parts.'},
+      starter:{end:'Check starter engagement and mechanical condition',detail:'A click without cranking can involve the solenoid, high-current supply or starter. Stop if there is burning smell or unusually hot wiring; use OEM tests before repair.'}
+    }},
+    'crank-no-start':{title:'Cranks but will not start',sub:'Starter spins the engine at a normal speed but it does not run.',tools:['OBD-II scan tool','12 V battery tester'],warning:'Do not loosen pressurized fuel fittings or test spark around fuel vapors.',start:'a',nodes:{
+      a:{q:'Is there fuel in the tank according to the gauge?',hint:'Confirm sufficient fuel; fuel gauges and level sensors can be inaccurate.',yes:'b',no:'fuel'},
+      b:{q:'Is the malfunction indicator lamp on or are any DTCs stored?',hint:'Read and record DTCs and freeze-frame before clearing anything.',yes:'codes',no:'c'},
+      c:{q:'Does the engine briefly try to fire?',hint:'Note changes in sound, smell or throttle response only; do not use starting fluid.',yes:'intermittent',no:'sequence'},
+      fuel:{end:'Confirm fuel level first',detail:'Refuel with correct grade and recheck. If still no start, retrieve OEM fuel delivery diagnostics.'},
+      codes:{end:'Use DTCs to select the proper OEM test',detail:'Read freeze-frame, monitor sensor data, and use the relevant factory diagnostic chart. Do not replace a component solely because its name appears in a code.'},
+      intermittent:{end:'Check ignition and engine-management data',detail:'Possible intermittent air/fuel or sensor input fault. Record live data and follow OEM crank/no-start guidance.'},
+      sequence:{end:'Check fuel, ignition and engine speed signals with OEM methods',detail:'There are several possible causes. Begin with stored DTCs and OEM system checks rather than guessing at replacement parts.'}
+    }},
+    'charging':{title:'Battery / charging warning',sub:'Battery lamp illuminated, electrical accessories weak, or repeated discharge.',tools:['Digital multimeter','Battery/charging system tester'],warning:'Never disconnect the battery while the engine is running as a charging-system test.',start:'a',nodes:{
+      a:{q:'Are there obvious loose or damaged battery connections?',hint:'With ignition off, only visually inspect safe, accessible 12 V terminals and connections.',yes:'connection',no:'b'},
+      b:{q:'Does the vehicle repeatedly need a jump-start?',hint:'Think about battery age, extended parking and accessories left on.',yes:'battery',no:'charging'},
+      connection:{end:'Connection or cable issue possible',detail:'Repair loose/damaged connections following OEM isolation instructions. Check terminal condition and voltage drop after the repair.'},
+      battery:{end:'Test battery health and parasitic draw if necessary',detail:'Battery condition, charging output and key-off loads may all matter. Have the battery load-tested; use factory sleep-mode and drain tests for parasitic concerns.'},
+      charging:{end:'Measure charging system performance under OEM conditions',detail:'Inspect accessible belt drive if applicable and record voltage under specified conditions. Smart-charging systems may vary voltage by design; follow factory thresholds.'}
+    }},
+    'overheat':{title:'Engine running hot',sub:'Over-temperature warning, coolant smell or high temperature gauge.',tools:['OBD-II scan tool for temperature data'],warning:'STOP: If overheating or steam is present, shut down safely. Never open a hot pressurized cooling system.',start:'a',nodes:{
+      a:{q:'Is there visible steam, coolant dripping, or a severe temperature warning?',hint:'Move to a safe location, switch engine off, and allow cooling. Do not open the radiator or reservoir cap hot.',yes:'stop',no:'b'},
+      b:{q:'After the engine is fully cool, is the coolant visibly below the marked level?',hint:'Only inspect a cold, accessible reservoir. Do not operate the vehicle if coolant is leaking or overheating.',yes:'low',no:'further'},
+      stop:{end:'Stop operation and arrange repair safely',detail:'Further operation can seriously damage the engine. Once fully cooled, seek a professional pressure/leak diagnosis using OEM procedures.'},
+      low:{end:'Possible coolant loss or leak',detail:'Inspect for visible leaks with the system cold. Follow factory fill, bleed and leak-test procedures; a low reservoir alone does not identify the cause.'},
+      further:{end:'Verify sensor data, fan behavior and cooling flow',detail:'Record indicated and scan-tool coolant temperatures under safe conditions. Follow OEM electrical and cooling-system tests; avoid continued operation if temperature rises.'}
+    }},
+    'misfire':{title:'Rough idle or misfire',sub:'Shaking engine, rough running, MIL or misfire DTC.',tools:['OBD-II scan tool'],warning:'If the malfunction indicator lamp flashes, stop driving to avoid possible catalytic-converter damage.',start:'a',nodes:{
+      a:{q:'Is the check engine light flashing during the symptom?',hint:'A flashing MIL can indicate a severe misfire.',yes:'stop',no:'b'},
+      b:{q:'Are P0300–P030x misfire codes stored?',hint:'Read and record DTCs, freeze frame and misfire counters if available.',yes:'codes',no:'data'},
+      stop:{end:'Stop driving and diagnose the active misfire',detail:'Continued operation can harm the catalyst. Arrange safe diagnosis of the ignition, fuel and mechanical systems using the manufacturer test plan.'},
+      codes:{end:'Use the cylinder and conditions from the DTC',detail:'Possible ignition, fuel delivery, intake or mechanical concern. Check factory misfire diagnostics, plugs/coils only after confirming actual cause.'},
+      data:{end:'Collect conditions and live data',detail:'Note whether symptoms occur cold, hot, idle or under load. Inspect accessible air hoses and review fuel trims and other data with the OEM diagnostic workflow.'}
+    }},
+    'brakes':{title:'Brake noise / warning',sub:'Grinding, pulsation, unusual pedal feel or brake system light.',tools:['Inspection light','Wheel/lift equipment as specified by OEM'],warning:'A soft, sinking pedal, fluid leak or serious braking defect means do not drive the vehicle.',start:'a',nodes:{
+      a:{q:'Is braking performance reduced, pedal abnormally soft, or red brake warning active?',hint:'Do not road-test an unsafe braking system.',yes:'unsafe',no:'b'},
+      b:{q:'Does the noise occur mainly when pressing the brake pedal?',hint:'Record speed, temperature and which corner appears affected if safely observable.',yes:'friction',no:'other'},
+      unsafe:{end:'Do not drive — inspect the brake system',detail:'The vehicle may be unsafe. Arrange an inspection following OEM hydraulic, ABS and parking-brake procedures. Never substitute generic torque values.'},
+      friction:{end:'Inspect brake friction and mounting components',detail:'Possible pad/rotor wear, hardware or caliper concern. Use OEM lifting, fastener and torque procedures; confirm whether a scan-tool service mode is needed.'},
+      other:{end:'Identify wheel, suspension or driveline sources',detail:'Do not assume a brake fault from noise alone. Inspect safely and locate the source before disassembling components.'}
+    }}
+  };
+  const DTC={
+    P0300:['Random / multiple cylinder misfire','Record freeze-frame and check misfire counters; inspect ignition, fuel and mechanical causes using OEM tests.'],
+    P0171:['Fuel system too lean (Bank 1)','Inspect accessible intake ducts and hoses, check trims and airflow data; do not replace oxygen sensors just from the code.'],
+    P0420:['Catalyst efficiency below threshold (Bank 1)','Check for exhaust leaks, fuel trims and active misfire before considering catalyst repair.'],
+    P0128:['Coolant thermostat — temperature below regulating threshold','Verify sensor data, actual warm-up performance and cooling-system condition per OEM procedures.'],
+    P0455:['Large evaporative emission system leak','Verify fuel cap closure and follow OEM EVAP leak testing; do not open pressurized fuel systems.'],
+    P0442:['Small evaporative emission system leak','Check cap seal and visual EVAP hoses, then use OEM leak test process.'],
+    P0101:['Mass or volume air flow circuit range/performance','Check air intake sealing, filter condition and sensor live data against OEM criteria.'],
+    P0562:['System voltage low','Record battery state and charging data, check 12 V cables and factory voltage thresholds.'],
+    P0700:['Transmission control system requests MIL','Retrieve transmission-module codes with a capable scan tool; P0700 alone does not identify a failed part.'],
+    P0440:['Evaporative emissions control system malfunction','Inspect cap and visible lines, review OEM EVAP procedure and relevant service bulletins.']
+  };
+  function renderDiagnosis(){
+    $('symptomList').innerHTML=Object.entries(FLOWS).map(([id,f])=>`<button type="button" class="symptom-button ${id===state.diagId?'active':''}" data-symptom="${id}"><span>${esc(f.title)}</span><span>›</span></button>`).join('');
+    const flow=FLOWS[state.diagId],node=flow.nodes[state.node||flow.start];
+    let content=`<div class="diag-header-row"><div><div class="section-kicker mini"><span class="kicker-line"></span> FAULT ISOLATION</div><h3>${esc(flow.title)}</h3><p>${esc(flow.sub)}</p></div><span class="diag-stamp">GENERIC · NOT OEM</span></div><div class="diag-progress">${[0,1,2,3].map((_,i)=>`<i class="${i<=state.history.length?'on':''}"></i>`).join('')}</div>`;
+    if(node.end){
+      content+=`<div class="diag-result"><div class="result-label">PRELIMINARY DIRECTION · NOT A CONFIRMED REPAIR</div><h4>${esc(node.end)}</h4><p>${esc(node.detail)}</p></div><div class="info-strip">Match symptoms against the current OEM test procedure for ${esc(vehicleText())}. Confirm component specifications, tool needs and safety steps before repair.</div><div class="diag-bottom-actions"><button type="button" class="button primary" id="addDiagnostic">Add finding to worksheet +</button><button type="button" class="button thin" id="restartDiagnostic">Restart flow ↺</button></div>`;
+      state.lastFinding=`${flow.title}: ${node.end}. ${node.detail}`;
+    } else {
+      content+=`<div class="diag-question">${esc(node.q)}</div><p class="diag-hint">${esc(node.hint)}</p><div class="diag-answers"><button class="answer-btn" data-answer="yes" type="button">Yes <span>↗</span></button><button class="answer-btn" data-answer="no" type="button">No <span>↗</span></button></div>${state.history.length?`<div class="diag-bottom-actions"><button type="button" class="button thin" id="backDiagnostic">← Previous question</button><button type="button" class="button ghost" id="restartDiagnostic">Start over</button></div>`:''}`;
+    }
+    content+=`<div class="diag-note">⚠ ${esc(flow.warning)}</div><div class="diag-steps-log"><b>Basic equipment:</b> ${flow.tools.map(esc).join(' · ')}<br><b>Evidence trail:</b> ${state.history.length?state.history.map(h=>`${h.answer.toUpperCase()}: ${h.question}`).map(esc).join(' → '):'No checks answered yet.'}</div>`;
+    $('diagnosticPanel').innerHTML=content;
+  }
+  function renderTools(){
+    const el=$('toolsResult');
+    if(!state.vehicle){el.innerHTML='<div class="empty-card"><div class="empty-symbol">⚒</div><h3>Select a vehicle to inspect tool records</h3><p>Choose its year, make and model above and search to see any sourced specialty-tool entries.</p></div>';return;}
+    const entries=state.docs.filter(d=>d.tools?.length>0);
+    const tools=entries.flatMap(d=>d.tools.map(t=>({tool:t,doc:d})))
+      .filter((item,i,arr)=>arr.findIndex(v=>v.tool.toLowerCase()===item.tool.toLowerCase())===i);
+    el.innerHTML=`<div class="results-stack"><div class="warning-strip">⚠ <div><b>Important:</b> These are only the tools recorded in your locally saved source-linked documents, not a complete OEM tool list. Missing tools do not mean a tool is unnecessary. Verify each applicable manufacturer's full procedure before the job.</div></div>${tools.length?`<div class="tool-category"><div class="tool-category-title">RECORDED OEM-SOURCE TOOL ENTRIES · ${tools.length}</div><div class="tool-table">${tools.map(t=>`<div class="tool-row"><div><strong>${esc(t.tool)}</strong><small>Entered from ${esc(t.doc.title)} · ${esc(t.doc.sourceReference)}</small></div>${blockLink(t.doc.sourceUrl,'View source')}</div>`).join('')}</div></div>`:`<div class="empty-card"><div class="empty-symbol">⚒</div><h3>No manufacturer-specific tools have been recorded yet</h3><p>Open ${esc(portal().name)} and inspect the OEM service procedure for required pullers, adapters, locking tools, programmers or calibration equipment.</p>${blockLink(portal().url,'Open OEM tool requirements')}</div>`}<div class="feature-card"><h3>General field diagnostic kit <span class="pill slate">NOT MANUFACTURER-REQUIRED</span></h3><p>Common starting equipment for simple faults; this is a generic suggestion only. OEM special service tools, safety equipment and exact specifications are job-dependent.</p><div class="doc-tools">${['OBD-II scan tool','12 V multimeter','Battery and charging system tester','Inspection light','Appropriate PPE'].map(x=>`<span class="tool-chip">${esc(x)}</span>`).join('')}</div></div>${portalCard()}</div>`;
+  }
+  function jobKey(){return 'field-oem-job:'+([state.vehicle?.year,state.vehicle?.make,state.vehicle?.model].filter(Boolean).join('|')||'unspecified');}
+  function renderJob(){
+    $('jobVehicle').textContent=state.vehicle?vehicleText():'No vehicle selected';
+    $('jobVehicleSubtitle').textContent=state.vehicle?'Details are linked to your selected vehicle (year/make/model only).':'Select year, make and model above to associate this worksheet.';
+    const data=loadJob();
+    for(const k of ['jobReference','jobOdometer','jobConcern','jobObservations','jobNext'])$(k).value=data[k]||'';
+    $('jobSaved').textContent=data._saved?`Saved on ${new Date(data._saved).toLocaleString()}`:'Local draft · not yet saved';
+  }
+  function loadJob(){try{return JSON.parse(localStorage.getItem(jobKey())||'{}');}catch{return {};}}
+  function saveJob(){
+    const data=Object.fromEntries(['jobReference','jobOdometer','jobConcern','jobObservations','jobNext'].map(k=>[k,$(k).value]));
+    data._saved=new Date().toISOString();
+    try{localStorage.setItem(jobKey(),JSON.stringify(data));$('jobSaved').textContent='Saved locally ✓';}
+    catch{alertMsg('This browser cannot save local data. You can still print the worksheet.');}
+  }
+  function addFinding(){
+    const data=loadJob();
+    data.jobObservations=[data.jobObservations||'',new Date().toLocaleString()+': '+state.lastFinding].filter(Boolean).join('\n\n');
+    data._saved=new Date().toISOString();
+    try{localStorage.setItem(jobKey(),JSON.stringify(data));}catch{alertMsg('Could not save observation in this browser.');return;}
+    show('job');
+    $('jobSaved').textContent='Diagnostic finding added ✓';
+  }
+  async function importDocument(e){
+    e.preventDefault();
+    if(!state.vehicle){$('importFeedback').textContent='Select and search a vehicle first.';return;}
+    const form=new FormData(e.currentTarget);
+    const lines=name=>String(form.get(name)||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    const payload={year:state.vehicle.year,make:state.vehicle.make,model:state.vehicle.model,title:form.get('title'),type:form.get('type'),sourceTitle:form.get('sourceTitle'),sourceReference:form.get('sourceReference'),sourceUrl:form.get('sourceUrl'),steps:lines('steps'),tools:lines('tools'),warnings:form.get('warnings'),notes:form.get('notes')};
+    $('importFeedback').textContent='Saving…';
+    try{
+      const saved=await api('/api/procedures',{method:'POST',body:JSON.stringify(payload)});
+      state.docs.unshift(saved.item);
+      $('importFeedback').textContent='Saved privately on this iPhone/browser ✓';
+      $('importForm').reset();
+      state.selectedType='all';$('docType').value='all';state.tab='documents';
+      show('library');renderLibrary();
+    }catch(error){$('importFeedback').textContent=error.message;}
+  }
+  function bind(){
+    $('vehicleForm').addEventListener('submit',search);
+    $('yearSelect').addEventListener('change',()=>models());
+    $('makeSelect').addEventListener('change',()=>{$('modelInput').value='';$('modelSelect').value='';models();});
+    $('modelSelect').addEventListener('change',()=>{if($('modelSelect').value)$('modelInput').value='';});
+    $('modelInput').addEventListener('input',()=>{if($('modelInput').value.trim())$('modelSelect').value='';});
+    $('decodeVin').addEventListener('click',decodeVin);
+    $('vinInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();decodeVin();}});
+    document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));
+    $('libraryTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;state.tab=b.dataset.tab;renderLibrary();});
+    $('libraryResults').addEventListener('click',e=>{
+      const go=e.target.closest('[data-go]'),tab=e.target.closest('[data-switch-tab]');
+      const del=e.target.closest('[data-delete-doc]');
+      if(del){
+        const id=del.dataset.deleteDoc;
+        if(!window.confirm('Remove this saved procedure card from this phone?'))return;
+        writeProcedures(savedProcedures().filter(d=>d.id!==id));
+        state.docs=state.docs.filter(d=>d.id!==id);
+        renderLibrary();renderTools();return;
+      }
+      if(go)show(go.dataset.go);
+      if(tab){state.tab=tab.dataset.switchTab;renderLibrary();}
+      if(e.target.closest('#sampleVehicle')){$('yearSelect').value='2017';$('makeSelect').value='Ford';$('modelInput').value='';models('Taurus');search();}
+    });
+    $('symptomList').addEventListener('click',e=>{const b=e.target.closest('[data-symptom]');if(!b)return;state.diagId=b.dataset.symptom;state.node=null;state.history=[];renderDiagnosis();});
+    $('diagnosticPanel').addEventListener('click',e=>{
+      const a=e.target.closest('[data-answer]'), flow=FLOWS[state.diagId];
+      if(a){const node=flow.nodes[state.node||flow.start];const answer=a.dataset.answer;state.history.push({node:state.node||flow.start,question:node.q,answer});state.node=node[answer];renderDiagnosis();}
+      else if(e.target.closest('#backDiagnostic')){const last=state.history.pop();state.node=last?last.node:flow.start;renderDiagnosis();}
+      else if(e.target.closest('#restartDiagnostic')){state.node=null;state.history=[];renderDiagnosis();}
+      else if(e.target.closest('#addDiagnostic'))addFinding();
+    });
+    const dtcLookup=()=>{
+      const code=$('dtcInput').value.trim().toUpperCase();
+      if(!/^[PBCU][0-9A-F]{4}$/.test(code)){$('dtcResult').textContent='Enter a five-character DTC, e.g. P0300.';return;}
+      let result=DTC[code];
+      if(!result && /^P030[1-8]$/.test(code))result=[`Cylinder ${code.at(-1)} misfire detected`,'Record freeze-frame; follow the OEM cylinder-specific misfire diagnostic chart.'];
+      $('dtcResult').innerHTML=result?`<strong>${esc(code)} — ${esc(result[0])}</strong><br>${esc(result[1])}<br><em>Generic guidance; validate for the specific vehicle.</em>`:`<strong>${esc(code)}</strong><br>No curated definition in this starter library. Look up the exact code in the manufacturer service portal; manufacturer-specific codes differ.`;
+    };
+    $('dtcButton').addEventListener('click',dtcLookup);
+    $('dtcInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();dtcLookup();}});
+    $('saveJob').addEventListener('click',saveJob);
+    for(const id of ['jobReference','jobOdometer','jobConcern','jobObservations','jobNext']){
+      $(id).addEventListener('input',saveJob);
+    }
+    $('clearJob').addEventListener('click',()=>{if(!window.confirm('Clear the saved worksheet for this vehicle?'))return;localStorage.removeItem(jobKey());renderJob();});
+    $('printJob').addEventListener('click',()=>window.print());
+    $('importForm').addEventListener('submit',importDocument);
+    $('exportBackup').addEventListener('click',()=>{
+      const snapshot={format:'field-oem-ios-v1',exportedAt:new Date().toISOString(),procedures:savedProcedures()};
+      const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download='FIELD-OEM-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+      $('backupStatus').textContent='Backup prepared. Save the JSON file to Files or iCloud Drive.';
+    });
+    $('importBackup').addEventListener('change',async e=>{
+      const file=e.target.files?.[0];if(!file)return;
+      try{
+        if(file.size>2000000)throw new Error('Backup too large (2 MB maximum).');
+        const parsed=JSON.parse(await file.text());
+        if(parsed.format!=='field-oem-ios-v1'||!Array.isArray(parsed.procedures)||parsed.procedures.length>250)throw new Error('Not a compatible FIELD / OEM backup.');
+        for(const p of parsed.procedures){
+          if(!p||typeof p!=='object'||!p.id||!p.title||!Array.isArray(p.steps)||!Array.isArray(p.tools)||typeof p.sourceUrl!=='string')throw new Error('Invalid document in backup.');
+          const u=new URL(p.sourceUrl);if(u.protocol!=='https:')throw new Error('Backup source URL must be HTTPS.');
+        }
+        if(!confirm('Replace all local source-linked procedures on this phone with '+parsed.procedures.length+' backup entries?'))return;
+        writeProcedures(parsed.procedures);$('backupStatus').textContent='Backup restored. Search again to refresh results.';
+      }catch(error){$('backupStatus').textContent='Import failed: '+error.message;}
+      finally{e.target.value='';}
+    });
+
+    $('alertClose').addEventListener('click',()=>$('appAlert').classList.add('hidden'));
+    $('helpBtn').addEventListener('click',()=>$('infoDialog').showModal());
+    $('closeDialog').addEventListener('click',()=>$('infoDialog').close());
+    $('dialogDone').addEventListener('click',()=>$('infoDialog').close());
+    $('menuToggle').addEventListener('click',()=>{const opened=$('sidebar').classList.toggle('open');$('menuToggle').setAttribute('aria-expanded',String(opened));});
+    $('installApp').addEventListener('click',requestInstall);
+    $('closeInstallDialog').addEventListener('click',()=>$('installDialog').close());
+    $('installDone').addEventListener('click',()=>$('installDialog').close());
+    $('sidebar').addEventListener('click',e=>{if(e.target.closest('[data-view]'))$('sidebar').classList.remove('open');});
+    window.addEventListener('online',updateNetwork);
+    window.addEventListener('offline',updateNetwork);
+  }
+  let installEvent=null;
+  function updateNetwork(){
+    $('networkStatus').classList.toggle('hidden',navigator.onLine);
+    $('networkStatus').textContent=navigator.onLine?'':'Offline mode: diagnostics and saved worksheets remain available. Live OEM searches and recalls require internet access.';
+  }
+  async function requestInstall(){
+    if(installEvent){
+      const promptEvent=installEvent;installEvent=null;
+      promptEvent.prompt();
+      try{await promptEvent.userChoice;}catch{}
+      return;
+    }
+    $('installInstructions').textContent=window.matchMedia('(display-mode: standalone)').matches?'FIELD / OEM is already opened as a home-screen app.':'Install FIELD / OEM as an app-like shortcut for quicker access to vehicle lookups and field diagnostics.';
+    $('installDialog').showModal();
+  }
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvent=e;});
+  window.addEventListener('appinstalled',()=>{installEvent=null;$('installApp').hidden=true;});
+  function setupPWA(){
+    updateNetwork();
+    if('serviceWorker' in navigator && window.isSecureContext){
+      navigator.serviceWorker.register('./sw.js').catch(()=>{/* The site stays usable without offline shell caching. */});
+    }
+    if(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone){$('installApp').hidden=true;}
+  }
+  async function init(){
+    yearOptions();bind();setupPWA();
+    const previewWarning=$('interactiveCheck');
+    if(previewWarning)previewWarning.hidden=true;
+    try{const c=await api('/api/catalog');state.makes=c.makes;state.portals=c.portals;populateMakes();}
+    catch{state.makes=['Ford','Toyota','Honda','Chevrolet','Nissan','Kia','Tesla'];populateMakes();alertMsg('Manufacturer directory unavailable. You can still use the diagnostics and worksheet.');}
+    try{
+      const prior=JSON.parse(localStorage.getItem('field-oem-last-vehicle')||'null');
+      if(prior && Number.isInteger(Number(prior.year)) && Number(prior.year)>=1981 && Number(prior.year)<=new Date().getFullYear()+1 && typeof prior.make==='string' && prior.make.length<=60 && typeof prior.model==='string' && prior.model.length<=80){
+        if(!state.makes.includes(prior.make)){const option=document.createElement('option');option.value=prior.make;option.textContent=prior.make;$('makeSelect').append(option);}
+        $('yearSelect').value=prior.year;$('makeSelect').value=prior.make;$('modelInput').value=prior.model;
+        $('modelSelect').value='';
+        $('docType').value=['all','repair','diagnostic','wiring','maintenance','tools','tsb','recall'].includes(prior.type)?prior.type:'all';
+        state.vehicle={year:String(prior.year),make:prior.make,model:prior.model};
+        models(prior.model);
+      }
+    }catch{}
+    renderLibrary();renderDiagnosis();renderTools();renderJob();
+  }
+  init();
+})();
+
+  </script>
+</body>
+</html>
